@@ -378,6 +378,7 @@ const UIAPE_DEFAULT_CONFIG = {
   DEFAULT_SIGNAL_UNIT: 0,
   ENABLE_S_UNITS: false,
   S_UNITS_AM_OFFSET: false,
+  S_UNITS_HIDE_LABEL: false,
 
   VOLUME_PERCENTAGE_TOAST: false,
 
@@ -578,6 +579,7 @@ const UIAPE_DEFAULT_CONFIG = {
     "DEFAULT_SIGNAL_UNIT",
     "ENABLE_S_UNITS",
     "S_UNITS_AM_OFFSET",
+    "S_UNITS_HIDE_LABEL",
     "IS_TEF_RADIO",
     "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
     "ECC_FLAG_SPACING_METRICS_MONITOR",
@@ -1951,6 +1953,7 @@ const TUNE_DELAY_IF_MORE_THAN_ONE_USER = UIAPE_CONFIG.TUNE_DELAY_IF_MORE_THAN_ON
 const DEFAULT_SIGNAL_UNIT = UIAPE_CONFIG.DEFAULT_SIGNAL_UNIT;
 const ENABLE_S_UNITS = UIAPE_CONFIG.ENABLE_S_UNITS;
 const S_UNITS_AM_OFFSET = UIAPE_CONFIG.S_UNITS_AM_OFFSET;
+const S_UNITS_HIDE_LABEL = UIAPE_CONFIG.S_UNITS_HIDE_LABEL;
 // #################### VOLUME TOAST NOTIFICATION #################### //
 
 // Displays a toast notification near the bottom of the webpage whenever the volume is changed.
@@ -3238,7 +3241,8 @@ function createUiapConfigLauncher() {
             ["TUNE_DELAY_IF_MORE_THAN_ONE_USER", "number", "Delay with active users", "Delay when at least one user is already online."],
             ["DEFAULT_SIGNAL_UNIT", "select", "Default signal unit", "0 default, 1 dBf, 2 dB\u00B5V, 3 dBm, 4 S-units.", [["0","Default"],["1","dBf"],["2","dB\u00B5V"],["3","dBm"],["4","S-units"]]],
             ["ENABLE_S_UNITS", "checkbox", "S-units", "Adds S-units (IARU Region 1) to the signal unit dropdown."],
-            ["S_UNITS_AM_OFFSET", "checkbox", "S-units AM offset", "More accurate S-units below 27 MHz using an offset of up to 40 dB for TEF668X."]
+            ["S_UNITS_AM_OFFSET", "checkbox", "S-units AM offset", "More accurate S-units below 27 MHz using an offset of up to 40 dB for TEF668X."],
+            ["S_UNITS_HIDE_LABEL", "checkbox", "Hide S-units label", "Hides the \"S-units\" text shown next to the reading."]
           ],
           visual: [
             ["DISPLAY_CANVAS_IN_LANDSCAPE_MODE", "checkbox", "Canvas in landscape (mobile)", "Mobile landscape canvas display."],
@@ -6136,6 +6140,9 @@ function uiapeWrapUpdateSignalUnits() {
         }
         const text = dbfToSUnitText(averageSignal, parsedData.freq);
         const highestText = dbfToSUnitText(parsedData.sigTop, parsedData.freq);
+        // Raw numeric dBf,
+        window.uiapeSignalDbf = averageSignal;
+        window.uiapeSignalHighestDbf = parsedData.sigTop;
         const elSignal = document.getElementById('data-signal');
         const elDecimal = document.getElementById('data-signal-decimal');
         const elHighest = document.getElementById('data-signal-highest');
@@ -6144,7 +6151,7 @@ function uiapeWrapUpdateSignalUnits() {
         if (elHighest) elHighest.textContent = highestText;
         // Also reaches Metrics Monitor's own unit label (same class, shared IDs with useLegacyIds),
         // overwriting its raw 'sunits' text with the same prettified label used everywhere else here
-        document.querySelectorAll('.signal-units').forEach((el) => { el.textContent = 'S-units'; });
+        document.querySelectorAll('.signal-units').forEach((el) => { el.textContent = S_UNITS_HIDE_LABEL ? '' : 'S-units'; });
       };
     } else if (attempts >= 200) {
       clearInterval(poll);
