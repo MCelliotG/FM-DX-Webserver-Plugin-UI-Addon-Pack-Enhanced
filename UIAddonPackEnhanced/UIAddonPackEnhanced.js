@@ -1,5 +1,5 @@
 /*
-    UI Add-on Pack Enhanced v1.0.5 by AAD
+    UI Add-on Pack Enhanced v1.0.6 by AAD
     -------------------------------------
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced
 */
@@ -13,7 +13,7 @@ const UIAPE_SEARCH_INCLUDE_DESCRIPTIONS = false;
 // Signal offset in dB
 const SIGNAL_OFFSET = 0.00;
 
-const pluginVersion = '1.0.5';
+const pluginVersion = '1.0.6';
 const pluginName = "UI Add-on Pack Enhanced";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced/refs/heads/main/UIAddonPackEnhanced/UIAddonPackEnhanced.js";
@@ -376,6 +376,8 @@ const UIAPE_DEFAULT_CONFIG = {
   TUNE_DELAY_IF_MORE_THAN_ONE_USER: 45,
 
   DEFAULT_SIGNAL_UNIT: 0,
+  ENABLE_S_UNITS: false,
+  S_UNITS_AM_OFFSET: false,
 
   VOLUME_PERCENTAGE_TOAST: false,
 
@@ -574,6 +576,8 @@ const UIAPE_DEFAULT_CONFIG = {
     "TUNE_DELAY",
     "TUNE_DELAY_IF_MORE_THAN_ONE_USER",
     "DEFAULT_SIGNAL_UNIT",
+    "ENABLE_S_UNITS",
+    "S_UNITS_AM_OFFSET",
     "IS_TEF_RADIO",
     "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
     "ECC_FLAG_SPACING_METRICS_MONITOR",
@@ -1945,6 +1949,8 @@ const TUNE_DELAY_IF_MORE_THAN_ONE_USER = UIAPE_CONFIG.TUNE_DELAY_IF_MORE_THAN_ON
 // Default signal unit for new users.
 // 0 = default, 1 = dbf, 2 = dbuv, 3 = dbm
 const DEFAULT_SIGNAL_UNIT = UIAPE_CONFIG.DEFAULT_SIGNAL_UNIT;
+const ENABLE_S_UNITS = UIAPE_CONFIG.ENABLE_S_UNITS;
+const S_UNITS_AM_OFFSET = UIAPE_CONFIG.S_UNITS_AM_OFFSET;
 // #################### VOLUME TOAST NOTIFICATION #################### //
 
 // Displays a toast notification near the bottom of the webpage whenever the volume is changed.
@@ -3230,7 +3236,9 @@ function createUiapConfigLauncher() {
             ["TUNE_DELAY_ENABLE", "checkbox", "Tune delay", "Enables delay for new users."],
             ["TUNE_DELAY", "number", "Tune delay seconds", "Delay before a new user can tune."],
             ["TUNE_DELAY_IF_MORE_THAN_ONE_USER", "number", "Delay with active users", "Delay when at least one user is already online."],
-            ["DEFAULT_SIGNAL_UNIT", "select", "Default signal unit", "0 default, 1 dBf, 2 dB\u00B5V, 3 dBm.", [["0","Default"],["1","dBf"],["2","dB\u00B5V"],["3","dBm"]]]
+            ["DEFAULT_SIGNAL_UNIT", "select", "Default signal unit", "0 default, 1 dBf, 2 dB\u00B5V, 3 dBm, 4 S-units.", [["0","Default"],["1","dBf"],["2","dB\u00B5V"],["3","dBm"],["4","S-units"]]],
+            ["ENABLE_S_UNITS", "checkbox", "S-units", "Adds S-units (IARU Region 1) to the signal unit dropdown."],
+            ["S_UNITS_AM_OFFSET", "checkbox", "S-units AM offset", "More accurate S-units below 27 MHz using an offset of up to 40 dB for TEF668X."]
           ],
           visual: [
             ["DISPLAY_CANVAS_IN_LANDSCAPE_MODE", "checkbox", "Canvas in landscape (mobile)", "Mobile landscape canvas display."],
@@ -6003,10 +6011,150 @@ if (!localStorage.getItem('signalUnit')) {
     case 3:
       localStorage.setItem('signalUnit', 'dbm');
       break;
+    case 4:
+      if (ENABLE_S_UNITS) localStorage.setItem('signalUnit', 'sunits');
+      break;
     default:
       // Ignore
   }
 }
+}
+
+// #################### S-UNITS #################### //
+
+// Runs regardless of ENABLE_S_UNITS, to catch it having just been turned off
+if (!ENABLE_S_UNITS) {
+  const sUnitsFallback = { 1: 'dbf', 2: 'dbuv', 3: 'dbm' }[DEFAULT_SIGNAL_UNIT] || 'dbf';
+  if (localStorage.getItem('signalUnit') === 'sunits') localStorage.setItem('signalUnit', sUnitsFallback);
+  if (localStorage.getItem('mm_signal_unit') === 'sunits') {
+    localStorage.setItem('mm_signal_unit', sUnitsFallback);
+    // Metrics Monitor seeds an in-memory copy of this key at its own script's top-level execution
+    setTimeout(() => {
+      if (window.MetricsMonitor && typeof window.MetricsMonitor.setSignalUnit === 'function') {
+        window.MetricsMonitor.setSignalUnit(sUnitsFallback);
+      }
+      const input = document.getElementById('signal-selector-input');
+      if (input && input.value === 'sunits') input.value = sUnitsFallback;
+    }, 1000);
+  }
+}
+
+if (ENABLE_S_UNITS) {
+
+// Metrics Monitor seeds its own unit state from a separate 'mm_signal_unit' key at its own
+// script's top-level execution, then only self-corrects later via a fixed 500ms timer
+if (localStorage.getItem('signalUnit') === 'sunits') {
+  if (localStorage.getItem('mm_signal_unit') !== 'sunits') localStorage.setItem('mm_signal_unit', 'sunits');
+  let mmSyncAttempts = 0;
+  const mmSyncPoll = setInterval(() => {
+    mmSyncAttempts++;
+    if (window.MetricsMonitor && typeof window.MetricsMonitor.setSignalUnit === 'function') {
+      clearInterval(mmSyncPoll);
+      window.MetricsMonitor.setSignalUnit('sunits');
+    } else if (mmSyncAttempts >= 250) {
+      clearInterval(mmSyncPoll);
+    }
+  }, 20);
+}
+
+function dbfToSUnitText(dbf, freq) {
+  const freqNum = parseFloat(freq);
+  // Same AM calibration correction as SignalMeterSmall's AM_OFFSET: below 27 MHz the
+  // reported dBf reads high relative to a real S-meter, by an amount that shrinks with frequency
+  if (S_UNITS_AM_OFFSET && freqNum <= 27) {
+    const amOffset = (freqNum <= 10) ? 40 : 40 - ((freqNum - 10) / (27 - 10)) * (40 - 20);
+    dbf -= amOffset;
+  }
+  const dbm = dbf - 120;
+  const ref = (freqNum < 30) ? -73 : -93;
+  const diff = dbm - ref;
+  if (diff >= 0) {
+    const over = Math.round(diff);
+    return over === 0 ? 'S9' : 'S9+' + over;
+  }
+  let s = 9 + Math.round(diff / 6);
+  if (s < 1) s = 1;
+  return 'S' + s;
+}
+window.dbfToSUnitText = dbfToSUnitText;
+
+function uiapeFixSignalUnitInputText() {
+  if (localStorage.getItem('signalUnit') !== 'sunits') return;
+  const input = document.getElementById('signal-selector-input');
+  if (input) input.value = 'S-units';
+}
+
+function uiapeInsertSUnitsOption() {
+  let attempts = 0;
+  const poll = setInterval(() => {
+    attempts++;
+    const optionsList = document.querySelector('#signal-selector .options');
+    if (optionsList) {
+      clearInterval(poll);
+      if (!optionsList.querySelector('.option[data-value="sunits"]')) {
+        const li = document.createElement('li');
+        li.className = 'option';
+        li.tabIndex = 0;
+        li.dataset.value = 'sunits';
+        li.textContent = 'S-units';
+        optionsList.appendChild(li);
+      }
+      uiapeFixSignalUnitInputText();
+
+      // Calls Metrics Monitor's own API directly instead of relying on its per-option
+      // click listener, which only binds to options present 500ms after its own load
+      optionsList.addEventListener('click', (event) => {
+        if (!event.target.closest('.option[data-value="sunits"]')) return;
+        if (window.MetricsMonitor && typeof window.MetricsMonitor.setSignalUnit === 'function') {
+          window.MetricsMonitor.setSignalUnit('sunits');
+        }
+      });
+      if (window.MetricsMonitor && typeof window.MetricsMonitor.onSignalUnitChange === 'function') {
+        window.MetricsMonitor.onSignalUnitChange((unit) => {
+          if (unit === 'sunits') uiapeFixSignalUnitInputText();
+        });
+      }
+    } else if (attempts >= 200) {
+      clearInterval(poll);
+      console.warn(`[${pluginName}] #signal-selector not found after 10s, S-units option not added.`);
+    }
+  }, 50);
+}
+
+uiapeOnDomReady(uiapeInsertSUnitsOption);
+
+function uiapeWrapUpdateSignalUnits() {
+  let attempts = 0;
+  const poll = setInterval(() => {
+    attempts++;
+    if (typeof window.updateSignalUnits === 'function') {
+      clearInterval(poll);
+      const original = window.updateSignalUnits;
+      window.updateSignalUnits = function (parsedData, averageSignal) {
+        if (localStorage.getItem('signalUnit') !== 'sunits') {
+          return original.apply(this, arguments);
+        }
+        const text = dbfToSUnitText(averageSignal, parsedData.freq);
+        const highestText = dbfToSUnitText(parsedData.sigTop, parsedData.freq);
+        const elSignal = document.getElementById('data-signal');
+        const elDecimal = document.getElementById('data-signal-decimal');
+        const elHighest = document.getElementById('data-signal-highest');
+        if (elSignal) elSignal.textContent = text;
+        if (elDecimal) elDecimal.textContent = '';
+        if (elHighest) elHighest.textContent = highestText;
+        // Also reaches Metrics Monitor's own unit label (same class, shared IDs with useLegacyIds),
+        // overwriting its raw 'sunits' text with the same prettified label used everywhere else here
+        document.querySelectorAll('.signal-units').forEach((el) => { el.textContent = 'S-units'; });
+      };
+    } else if (attempts >= 200) {
+      clearInterval(poll);
+      console.warn(`[${pluginName}] window.updateSignalUnits not found after 10s, S-units display not installed.`);
+    }
+  }, 50);
+}
+
+uiapeWrapUpdateSignalUnits();
+
 }
 
 // #################### VOLUME PERCENTAGE #################### //
