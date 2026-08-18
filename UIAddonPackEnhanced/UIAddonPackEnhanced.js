@@ -6096,6 +6096,33 @@ function dbfToSUnitText(dbf, freq) {
 }
 window.dbfToSUnitText = dbfToSUnitText;
 
+function uiapeGuardSignalElement(el) {
+  if (el._uiapeSignalGuard) return;
+  el._uiapeSignalGuard = new MutationObserver(() => {
+    if (localStorage.getItem('signalUnit') !== 'sunits') return;
+    const applyCorrection = () => {
+      const desired = el.dataset.uiapeDesiredText;
+      if (desired !== undefined && el.textContent !== desired) {
+        el.textContent = desired;
+        if (!window.__uiapeSignalGuardTripped) {
+          window.__uiapeSignalGuardTripped = true;
+          console.log(`[${pluginName}] Metrics Monitor conflict detected, S-units guard now correcting instantly`);
+        }
+      }
+    };
+    if (window.__uiapeSignalGuardTripped) {
+      applyCorrection();
+      return;
+    }
+    if (el._uiapeGuardTimer) return;
+    el._uiapeGuardTimer = setTimeout(() => {
+      el._uiapeGuardTimer = null;
+      applyCorrection();
+    }, 20);
+  });
+  el._uiapeSignalGuard.observe(el, { childList: true, characterData: true, subtree: true });
+}
+
 function uiapeFixSignalUnitInputText() {
   if (localStorage.getItem('signalUnit') !== 'sunits') return;
   const input = document.getElementById('signal-selector-input');
@@ -6160,9 +6187,9 @@ function uiapeWrapUpdateSignalUnits() {
         const elSignal = document.getElementById('data-signal');
         const elDecimal = document.getElementById('data-signal-decimal');
         const elHighest = document.getElementById('data-signal-highest');
-        if (elSignal) elSignal.textContent = text;
-        if (elDecimal) elDecimal.textContent = '';
-        if (elHighest) elHighest.textContent = highestText;
+        if (elSignal) { elSignal.textContent = text; elSignal.dataset.uiapeDesiredText = text; uiapeGuardSignalElement(elSignal); }
+        if (elDecimal) { elDecimal.textContent = ''; elDecimal.dataset.uiapeDesiredText = ''; uiapeGuardSignalElement(elDecimal); }
+        if (elHighest) { elHighest.textContent = highestText; elHighest.dataset.uiapeDesiredText = highestText; uiapeGuardSignalElement(elHighest); }
         // Also reaches Metrics Monitor's own unit label (same class, shared IDs with useLegacyIds),
         // overwriting its raw 'sunits' text with the same prettified label used everywhere else here
         document.querySelectorAll('.signal-units').forEach((el) => { el.textContent = S_UNITS_HIDE_LABEL ? '' : 'S-units'; });
