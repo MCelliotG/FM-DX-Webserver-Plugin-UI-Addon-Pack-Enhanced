@@ -2416,6 +2416,21 @@ function createUiapConfigLauncher() {
         overflow: auto;
         flex: 1 1 auto;
         min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--color-4, #888) 50%, transparent) transparent;
+      }
+
+      .uiape-config-body::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .uiape-config-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .uiape-config-body::-webkit-scrollbar-thumb {
+        background: color-mix(in srgb, var(--color-4, #888) 50%, transparent);
+        border-radius: 6px;
       }
 
       .uiape-config-section {
