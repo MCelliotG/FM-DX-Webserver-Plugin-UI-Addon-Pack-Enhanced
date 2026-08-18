@@ -1421,8 +1421,7 @@ function uiapeBuildLiveCss(cfg) {
       panelStyleBorder = 'none';
     } else if (cfg.PANEL_STYLE_EFFECT === 3) {
       panelStyleBackground = 'linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.03) 100%), var(--color-1-transparent)';
-      panelStyleBoxShadow = '1px 1px 3px var(--color-1-transparent), -1px -1px 3px var(--color-3-transparent)';
-      panelStyleBorder = '1px solid rgba(255,255,255,0.18)';
+      panelStyleBoxShadow = '1px 1px 3px var(--color-1-transparent), -1px -1px 3px var(--color-3-transparent), inset 0 0 0 1px rgba(255,255,255,0.18)';
     }
 
     if (panelStyleBackground) {
