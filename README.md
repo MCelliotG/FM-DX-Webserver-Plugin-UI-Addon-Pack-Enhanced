@@ -15,6 +15,10 @@ A collection of visual enhancements for FM-DX Webserver. Features may be added/r
 
 ###### Includes code and assistance from Highpoint2000 & MCelliotG.
 
+v1.0.6
+------
+* Added `S-units` options
+
 v1.0.5
 ------
 * Minor fixes for mobile
