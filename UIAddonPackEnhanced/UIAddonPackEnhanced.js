@@ -7696,7 +7696,7 @@ uiapeOnDomReady(initMetricsMonitor);
 // Lets uiapeAfterConfigChange call this from outside the ENABLE_PLUGIN gate, which hides the function's own name
 uiapeInitRdsIconStylePanelFn = uiapeInitRdsIconStylePanel;
 
-if (!uiapeIsVisualEqActive(getUiapPanelConfig()) && (RDS_ICON_STYLE || LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN || RDS_ICON_STYLE_REMOVE_RDS_ICON) && innerWidth > 360) {
+if (!uiapeIsVisualEqActive(getUiapPanelConfig()) && (RDS_ICON_STYLE || LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN || RDS_ICON_STYLE_REMOVE_RDS_ICON || REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN) && innerWidth > 360) {
   uiapeInitRdsIconStylePanel();
 }
 
