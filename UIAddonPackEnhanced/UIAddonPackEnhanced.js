@@ -232,6 +232,8 @@ let uiapeInitRdsIconStylePanelFn = null;       // set inside the ENABLE_PLUGIN g
 let uiapeTeardownRdsIconStylePanelFn = null;   // set inside the ENABLE_PLUGIN gate, so uiapeAfterConfigChange (declared outside it) can call it
 let uiapeApplyStereoGlowFn = null;             // set inside the ENABLE_PLUGIN gate, so uiapeAfterConfigChange (declared outside it) can call it
 let uiapeReapplyIndicatorColorsFn = null;      // set inside the ENABLE_PLUGIN gate, so uiapeAfterConfigChange (declared outside it) can call it
+let uiapeRebuildEccWrapperContentFn = null;     // ECC renderer for live display/color/glow changes
+let uiapeNativeEccObserver = null;                  // watches the Webserver's native .data-flag lifecycle
 let uiapeReapplyMultipathIndicator = null;     // set inside the multipath indicator block, if it runs
 let uiapeMobileStatusBarConnectionFn = null;   // set inside the MOBILE_STATUS_BAR_CONNECTION block, so moveButtons() can call it
 let uiapeRenderAllControlsFn = null;           // set inside attachLauncher, so saveUiapConfig can refresh reset-button visibility right after saving
@@ -411,6 +413,14 @@ const UIAPE_DEFAULT_CONFIG = {
 
   RDS_ICON_STYLE: false,
   RDS_ICON_STYLE_MOBILE: false,
+  PTY_DISPLAY_MODE: "FULL",
+  ECC_DISPLAY_MODE: "FLAG",
+  ECC_INDICATOR_COLOR: "",
+  LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC: false,
+  HORIZONTAL_ICON_SPACING_MODE: "PRESET",
+  HORIZONTAL_ICON_SPACING_UNIFORM: 8,
+  HORIZONTAL_ICON_SPACING_AUTO_MIN: 4,
+  HORIZONTAL_ICON_SPACING_AUTO_MAX: 14,
   METRICS_MONITOR_PLUGIN_IS_INSTALLED: false,
   ECC_FLAG_SPACING_METRICS_MONITOR: 9,
   IS_VISUALEQ_PLUGIN_ENABLED: false,
@@ -930,6 +940,9 @@ const UIAPE_MESSAGE_DRIVEN_KEYS = new Set([
   "BANDWIDTH_UPDATE_INTERVAL",
   "LED_GLOW_EFFECT_ICONS_BANDWIDTH",
   "BW_INDICATOR_COLOR", "BW_INDICATOR_COLOR_OFF",
+  "PTY_DISPLAY_MODE",
+  "ECC_DISPLAY_MODE", "ECC_INDICATOR_COLOR",
+  "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC",
   "RDS_FLAG_INDICATOR"
 ]);
 
@@ -961,15 +974,31 @@ function uiapeAfterConfigChange(key) {
     uiapeRefreshLiveCss();
     return;
   }
-  if (key === "RDS_ICON_PRESET" || key === "RDS_ICON_STYLE_PRESETS") {
+  if (
+    key === "RDS_ICON_PRESET" ||
+    key === "RDS_ICON_STYLE_PRESETS" ||
+    key === "HORIZONTAL_ICON_SPACING_MODE" ||
+    key === "HORIZONTAL_ICON_SPACING_UNIFORM" ||
+    key === "HORIZONTAL_ICON_SPACING_AUTO_MIN" ||
+    key === "HORIZONTAL_ICON_SPACING_AUTO_MAX"
+  ) {
     // Only rebuild when Enhanced owns the icon row, otherwise this would overwrite Metrics Monitor's panel
     if (uiapeRebuildRdsIconPanel && getUiapPanelConfig().RDS_ICON_STYLE) uiapeRebuildRdsIconPanel();
     uiapeRefreshLiveCss();
     return;
   }
-  if (key === "ECC_INDICATOR_COLOR_OFF") {
-    // Force a rebuild for immediate feedback instead of waiting for the next station message
-    if (uiapeRebuildRdsIconPanel && getUiapPanelConfig().RDS_ICON_STYLE) uiapeRebuildRdsIconPanel();
+  if (
+    key === "ECC_INDICATOR_COLOR_OFF" ||
+    key === "ECC_DISPLAY_MODE" ||
+    key === "ECC_INDICATOR_COLOR" ||
+    key === "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC"
+  ) {
+    const eccWrapper = document.getElementById("eccWrapper");
+    if (eccWrapper?._uiapeEccState && uiapeRebuildEccWrapperContentFn) {
+      uiapeRebuildEccWrapperContentFn(eccWrapper);
+    } else if (uiapeRebuildRdsIconPanel && getUiapPanelConfig().RDS_ICON_STYLE) {
+      uiapeRebuildRdsIconPanel();
+    }
     return;
   }
   if (key === "SHOW_CUSTOM_BUTTON_EDITOR") {
@@ -1602,8 +1631,8 @@ ${cfg.RDS_ICON_STYLE ? `
   gap: 1px;
   margin-left: 4px;
   margin-bottom: 2px;
-  width: 46px;
-  min-width: 46px;
+  width: max-content;
+  min-width: 0;
   line-height: 1;
   font-size: 8px;
   font-weight: 600;
@@ -2009,6 +2038,434 @@ function uiapeCssScaleValue(value, factor = 1) {
 
 // Keeps eccWrapper matching the no-ECC placeholder's width, so later row icons never shift
 const UIAPE_ECC_FLAG_RESERVED_WIDTH = 5.25;
+
+function uiapeBindNativeEccObserver(eccWrapper) {
+  const nativeFlag = document.querySelector('.data-flag:not(#eccWrapper *)');
+
+  if (uiapeNativeEccObserver) {
+    uiapeNativeEccObserver.disconnect();
+    uiapeNativeEccObserver = null;
+  }
+
+  if (!nativeFlag || !eccWrapper) return;
+
+  uiapeNativeEccObserver = new MutationObserver(() => {
+    if (uiapeRebuildEccWrapperContentFn) {
+      uiapeRebuildEccWrapperContentFn(eccWrapper);
+    }
+  });
+
+  uiapeNativeEccObserver.observe(nativeFlag, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    characterData: true
+  });
+}
+
+function uiapeGetNativeEccCountryInfo() {
+  const eccSpan = document.querySelector('.data-flag:not(#eccWrapper *)');
+  if (!eccSpan || !eccSpan.innerHTML.trim()) return null;
+
+  const flagIcon = eccSpan.querySelector('i[class*="flag-sm-"]');
+  if (!flagIcon) return null;
+
+  const classes = String(flagIcon.className || '').split(/\s+/);
+  const isoClass = classes.find(cls => /^flag-sm-[a-z]{2}$/i.test(cls));
+  const countryCode = isoClass ? isoClass.slice('flag-sm-'.length).toUpperCase() : '';
+
+  // "UN" is the Webserver's unknown/unresolved country placeholder,
+  // not a valid ECC country to expose in the enhanced indicator.
+  if (!countryCode || countryCode === "UN") return null;
+
+  return {
+    source: eccSpan,
+    countryCode,
+    countryName: flagIcon.getAttribute('title') || ''
+  };
+}
+
+
+function uiapeCreateStandardIndicatorGlow(hexColor, glowIntensity) {
+  const match = String(hexColor || "").trim().match(/^#([0-9a-f]{6})$/i);
+  if (!match) return "none";
+
+  const hex = match[1];
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  let alpha = Number(glowIntensity);
+  if (!Number.isFinite(alpha)) alpha = 0.25;
+
+  const glow = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  return [
+    `drop-shadow(0 0 3px ${glow})`,
+    `drop-shadow(0 0 6px ${glow})`,
+    `drop-shadow(0 0 9px ${glow})`
+  ].join(" ");
+}
+
+const UIAPE_ISO2_TO_ISO3 = Object.freeze({
+  "AD": "AND",
+  "AE": "ARE",
+  "AF": "AFG",
+  "AG": "ATG",
+  "AI": "AIA",
+  "AL": "ALB",
+  "AM": "ARM",
+  "AO": "AGO",
+  "AQ": "ATA",
+  "AR": "ARG",
+  "AS": "ASM",
+  "AT": "AUT",
+  "AU": "AUS",
+  "AW": "ABW",
+  "AX": "ALA",
+  "AZ": "AZE",
+  "BA": "BIH",
+  "BB": "BRB",
+  "BD": "BGD",
+  "BE": "BEL",
+  "BF": "BFA",
+  "BG": "BGR",
+  "BH": "BHR",
+  "BI": "BDI",
+  "BJ": "BEN",
+  "BL": "BLM",
+  "BM": "BMU",
+  "BN": "BRN",
+  "BO": "BOL",
+  "BQ": "BES",
+  "BR": "BRA",
+  "BS": "BHS",
+  "BT": "BTN",
+  "BV": "BVT",
+  "BW": "BWA",
+  "BY": "BLR",
+  "BZ": "BLZ",
+  "CA": "CAN",
+  "CC": "CCK",
+  "CD": "COD",
+  "CF": "CAF",
+  "CG": "COG",
+  "CH": "CHE",
+  "CI": "CIV",
+  "CK": "COK",
+  "CL": "CHL",
+  "CM": "CMR",
+  "CN": "CHN",
+  "CO": "COL",
+  "CR": "CRI",
+  "CU": "CUB",
+  "CV": "CPV",
+  "CW": "CUW",
+  "CX": "CXR",
+  "CY": "CYP",
+  "CZ": "CZE",
+  "DE": "DEU",
+  "DJ": "DJI",
+  "DK": "DNK",
+  "DM": "DMA",
+  "DO": "DOM",
+  "DZ": "DZA",
+  "EC": "ECU",
+  "EE": "EST",
+  "EG": "EGY",
+  "EH": "ESH",
+  "ER": "ERI",
+  "ES": "ESP",
+  "ET": "ETH",
+  "FI": "FIN",
+  "FJ": "FJI",
+  "FK": "FLK",
+  "FM": "FSM",
+  "FO": "FRO",
+  "FR": "FRA",
+  "GA": "GAB",
+  "GB": "GBR",
+  "GD": "GRD",
+  "GE": "GEO",
+  "GF": "GUF",
+  "GG": "GGY",
+  "GH": "GHA",
+  "GI": "GIB",
+  "GL": "GRL",
+  "GM": "GMB",
+  "GN": "GIN",
+  "GP": "GLP",
+  "GQ": "GNQ",
+  "GR": "GRC",
+  "GS": "SGS",
+  "GT": "GTM",
+  "GU": "GUM",
+  "GW": "GNB",
+  "GY": "GUY",
+  "HK": "HKG",
+  "HM": "HMD",
+  "HN": "HND",
+  "HR": "HRV",
+  "HT": "HTI",
+  "HU": "HUN",
+  "ID": "IDN",
+  "IE": "IRL",
+  "IL": "ISR",
+  "IM": "IMN",
+  "IN": "IND",
+  "IO": "IOT",
+  "IQ": "IRQ",
+  "IR": "IRN",
+  "IS": "ISL",
+  "IT": "ITA",
+  "JE": "JEY",
+  "JM": "JAM",
+  "JO": "JOR",
+  "JP": "JPN",
+  "KE": "KEN",
+  "KG": "KGZ",
+  "KH": "KHM",
+  "KI": "KIR",
+  "KM": "COM",
+  "KN": "KNA",
+  "KP": "PRK",
+  "KR": "KOR",
+  "KW": "KWT",
+  "KY": "CYM",
+  "KZ": "KAZ",
+  "LA": "LAO",
+  "LB": "LBN",
+  "LC": "LCA",
+  "LI": "LIE",
+  "LK": "LKA",
+  "LR": "LBR",
+  "LS": "LSO",
+  "LT": "LTU",
+  "LU": "LUX",
+  "LV": "LVA",
+  "LY": "LBY",
+  "MA": "MAR",
+  "MC": "MCO",
+  "MD": "MDA",
+  "ME": "MNE",
+  "MF": "MAF",
+  "MG": "MDG",
+  "MH": "MHL",
+  "MK": "MKD",
+  "ML": "MLI",
+  "MM": "MMR",
+  "MN": "MNG",
+  "MO": "MAC",
+  "MP": "MNP",
+  "MQ": "MTQ",
+  "MR": "MRT",
+  "MS": "MSR",
+  "MT": "MLT",
+  "MU": "MUS",
+  "MV": "MDV",
+  "MW": "MWI",
+  "MX": "MEX",
+  "MY": "MYS",
+  "MZ": "MOZ",
+  "NA": "NAM",
+  "NC": "NCL",
+  "NE": "NER",
+  "NF": "NFK",
+  "NG": "NGA",
+  "NI": "NIC",
+  "NL": "NLD",
+  "NO": "NOR",
+  "NP": "NPL",
+  "NR": "NRU",
+  "NU": "NIU",
+  "NZ": "NZL",
+  "OM": "OMN",
+  "PA": "PAN",
+  "PE": "PER",
+  "PF": "PYF",
+  "PG": "PNG",
+  "PH": "PHL",
+  "PK": "PAK",
+  "PL": "POL",
+  "PM": "SPM",
+  "PN": "PCN",
+  "PR": "PRI",
+  "PS": "PSE",
+  "PT": "PRT",
+  "PW": "PLW",
+  "PY": "PRY",
+  "QA": "QAT",
+  "RE": "REU",
+  "RO": "ROU",
+  "RS": "SRB",
+  "RU": "RUS",
+  "RW": "RWA",
+  "SA": "SAU",
+  "SB": "SLB",
+  "SC": "SYC",
+  "SD": "SDN",
+  "SE": "SWE",
+  "SG": "SGP",
+  "SH": "SHN",
+  "SI": "SVN",
+  "SJ": "SJM",
+  "SK": "SVK",
+  "SL": "SLE",
+  "SM": "SMR",
+  "SN": "SEN",
+  "SO": "SOM",
+  "SR": "SUR",
+  "SS": "SSD",
+  "ST": "STP",
+  "SV": "SLV",
+  "SX": "SXM",
+  "SY": "SYR",
+  "SZ": "SWZ",
+  "TC": "TCA",
+  "TD": "TCD",
+  "TF": "ATF",
+  "TG": "TGO",
+  "TH": "THA",
+  "TJ": "TJK",
+  "TK": "TKL",
+  "TL": "TLS",
+  "TM": "TKM",
+  "TN": "TUN",
+  "TO": "TON",
+  "TR": "TUR",
+  "TT": "TTO",
+  "TV": "TUV",
+  "TW": "TWN",
+  "TZ": "TZA",
+  "UA": "UKR",
+  "UG": "UGA",
+  "UM": "UMI",
+  "US": "USA",
+  "UY": "URY",
+  "UZ": "UZB",
+  "VA": "VAT",
+  "VC": "VCT",
+  "VE": "VEN",
+  "VG": "VGB",
+  "VI": "VIR",
+  "VN": "VNM",
+  "VU": "VUT",
+  "WF": "WLF",
+  "WS": "WSM",
+  "YE": "YEM",
+  "YT": "MYT",
+  "ZA": "ZAF",
+  "ZM": "ZMB",
+  "ZW": "ZWE"
+});
+
+function uiapeIso3FromIso2(countryCode) {
+  const iso2 = String(countryCode || "").trim().toUpperCase();
+  return UIAPE_ISO2_TO_ISO3[iso2] || iso2;
+}
+
+function uiapeCreateEccCountryCodeElement(countryCode, countryName, heightPx, activeColor = "", glowEnabled = false) {
+  const code = document.createElement('span');
+  code.className = 'uiape-ecc-country-code';
+  code.textContent = uiapeIso3FromIso2(countryCode);
+  const countryCodeIso3 = uiapeIso3FromIso2(countryCode);
+  if (countryName) code.title = `${countryName} (${countryCodeIso3})`;
+  code.style.display = 'inline-flex';
+  code.style.alignItems = 'center';
+  code.style.justifyContent = 'center';
+  code.style.height = `${heightPx}px`;
+  code.style.boxSizing = 'border-box';
+  code.style.padding = '0 3px';
+  code.style.minWidth = '31px';
+  code.style.border = '1px solid currentColor';
+  code.style.borderRadius = '3px';
+  code.style.fontSize = '12px';
+  code.style.fontWeight = '700';
+  code.style.lineHeight = '1';
+
+  // Match applyTextIndicatorColor(): default uses white, auto resolves
+  // to the theme accent, and custom uses the selected hex colour.
+  const color = activeColor || "#FFFFFF";
+  code.style.color = color;
+  code.style.borderColor = color;
+  code.style.whiteSpace = 'nowrap';
+
+  // Same 3/6/9px drop-shadow pattern used by the existing text indicators.
+  if (glowEnabled && color) {
+    const liveCfg = getUiapPanelConfig();
+    const intensity = Number(liveCfg.RDS_INDICATOR_ICON_GLOW_INTENSITY);
+    code.style.filter = uiapeCreateStandardIndicatorGlow(
+      color,
+      Number.isFinite(intensity) ? intensity : 0.25
+    );
+  } else {
+    code.style.filter = "none";
+  }
+
+  code.style.textShadow = "none";
+  code.style.boxShadow = "none";
+  code.dataset.uiapeDesiredColor = code.style.color;
+  code.dataset.uiapeDesiredBorderColor = code.style.borderColor;
+  code.dataset.uiapeDesiredFilter = code.style.filter;
+
+  return code;
+}
+
+function uiapeAppendActiveEccContent(eccWrapper, eccPreset, liveCfg, mmInstalled) {
+  const info = uiapeGetNativeEccCountryInfo();
+  if (!info) return false;
+
+  const displayMode = String(liveCfg.ECC_DISPLAY_MODE || 'FLAG').toUpperCase();
+  const eccHeight = uiapeResolveLiveRdsIconHeight(eccPreset, "ECC", eccPreset.PTY_HEIGHT);
+
+  // Match the existing three-state color controls:
+  // default = no override, auto = theme accent, custom = #RRGGBB.
+  const eccColorSetting = String(liveCfg.ECC_INDICATOR_COLOR || "").trim();
+  const eccActiveColor =
+    eccColorSetting.toLowerCase() === "default"
+      ? ""
+      : resolveIconColor(eccColorSetting, "");
+
+  const eccCcGlowEnabled = !!liveCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC;
+  const eccFlagLeftInset =
+    (Number(eccPreset.ECC_FLAG_SPACING) || 0) +
+    (mmInstalled ? Number(liveCfg.ECC_FLAG_SPACING_METRICS_MONITOR) || 0 : 0);
+
+  const appendFlag = () => {
+    const flagClone = info.source.cloneNode(true);
+    flagClone.style.marginLeft = eccFlagLeftInset + 'px';
+    flagClone.style.marginRight = displayMode === 'FLAG'
+      ? (UIAPE_ECC_FLAG_RESERVED_WIDTH - eccFlagLeftInset) + 'px'
+      : '3px';
+    flagClone.style.marginTop = '0';
+    flagClone.style.transform = 'translateY(0)';
+    flagClone.style.display = 'inline-flex';
+    flagClone.style.alignItems = 'center';
+    flagClone.style.height = '17px';
+    flagClone.style.lineHeight = '17px';
+    eccWrapper.appendChild(flagClone);
+  };
+
+  if (displayMode === 'COUNTRY_CODE') {
+    eccWrapper.appendChild(
+      uiapeCreateEccCountryCodeElement(info.countryCode, info.countryName, eccHeight, eccActiveColor, eccCcGlowEnabled)
+    );
+  } else if (displayMode === 'FLAG_CC') {
+    appendFlag();
+    eccWrapper.appendChild(
+      uiapeCreateEccCountryCodeElement(info.countryCode, info.countryName, eccHeight, eccActiveColor, eccCcGlowEnabled)
+    );
+  } else {
+    appendFlag();
+  }
+
+  eccWrapper.title = info.countryName || info.countryCode;
+  const iso3 = uiapeIso3FromIso2(info.countryCode);
+  eccWrapper.setAttribute('aria-label', info.countryName
+    ? `${info.countryName} (${iso3})`
+    : iso3);
+
+  return true;
+}
 
 // Kept separate from the RDS/Stereo icons block so it stays reachable even when that feature is off
 function uiapeGetActiveRdsPreset(cfg) {
@@ -3282,10 +3739,16 @@ function createUiapConfigLauncher() {
           rds: [
             ["RDS_ICON_STYLE", "checkbox", "Enable UI Addon Icons Style", "Enables RDS, PTY, TP, TA icons."],
             ["RDS_ICON_STYLE_MOBILE", "checkbox", "Enable UI Addon Icons Style on mobile", "Enables UI Addon Icons Style on mobile, and turns on the setting above too since this depends on it."],
+            ["PTY_DISPLAY_MODE", "select", "Show PTY as", "Choose how PTY label is displayed.", [["FULL", "Full label"], ["SHORT", "Short label"], ["ICON_SHORT", "Icon & short label"]]],
 
             ["IS_TEF_RADIO", "checkbox", "TEF radio mode", "Uses TEF radio MP assumption."],
             ["METRICS_MONITOR_PLUGIN_IS_INSTALLED", "checkbox", "Metrics Monitor installed", "Enable if Metrics Monitor plugin is installed."],
             ["IS_VISUALEQ_PLUGIN_ENABLED", "checkbox", "VisualEQ enabled", "Enable if VisualEQ plugin is installed."],
+
+            ["HORIZONTAL_ICON_SPACING_MODE", "select", "Horizontal icon spacing", "Preset uses the individual spacing values below. Uniform uses one shared gap. Auto calculates a centered gap from the available row width and keeps the row away from the panel edges.", [["PRESET","Preset"],["UNIFORM","Uniform"],["AUTO","Auto"]]],
+            ["HORIZONTAL_ICON_SPACING_UNIFORM", "number", "Uniform horizontal spacing", "Shared spacing in pixels when Horizontal icon spacing is Uniform."],
+            ["HORIZONTAL_ICON_SPACING_AUTO_MIN", "number", "Auto spacing minimum", "Minimum gap in pixels used by Auto mode."],
+            ["HORIZONTAL_ICON_SPACING_AUTO_MAX", "number", "Auto spacing maximum", "Maximum gap in pixels used by Auto mode."],
 
             ["RDS_ICON_PRESET", "select", "RDS icon preset", "0 user, 1 preset 1, 2 preset 2, 3 preset 3.", [["0","User defined"],["1","Preset 1"],["2","Preset 2"],["3","Preset 3"]]],
 
@@ -3309,6 +3772,9 @@ function createUiapConfigLauncher() {
             ["PTY_INDICATOR_COLOR_OFF", "color", "PTY off color", "default, auto, or custom #RRGGBB."],
             ["MS_INDICATOR_COLOR", "color", "MS color", "default, auto, or custom #RRGGBB."],
             ["MS_INDICATOR_COLOR_OFF", "color", "MS off color", "default, auto, or custom #RRGGBB."],
+            ["ECC_DISPLAY_MODE", "select", "Show ECC as", "Choose how ECC country information is displayed using the webserver's native country flag/ISO code.", [["FLAG","Flag"],["COUNTRY_CODE","Country code"],["FLAG_CC","Flag & country code"]]],
+            ["ECC_INDICATOR_COLOR", "color", "ECC active color", "default, auto, or custom #RRGGBB. Applies only to the country-code text and border; the flag is unchanged."],
+            ["LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC", "checkbox", "ECC country code glow", "Glow effect for the ECC country code text and border only."],
             ["ECC_INDICATOR_COLOR_OFF", "color", "ECC off color", "default, auto, or custom #RRGGBB. Only affects the fallback label shown when there's no flag to display."],
             ["RDS_ICON_STYLE_REMOVE_RDS_ICON", "checkbox", "Remove RDS icon", "Useful with multipath/Metrics Monitor setups."],
             ["MULTIPATH_INDICATOR", "checkbox", "Multipath indicator", "Adds multipath icon/text."],
@@ -5619,16 +6085,79 @@ function addRandomIcon(result) {
     const showMultipathIcon = displayMode !== "TEXT";
     const showMultipathText = displayMode !== "ICON";
 
-    const signalText = (Number.isFinite(uiapeMultipathSig) && uiapeMultipathSigDisplay !== "") ? (uiapeMultipathSig + SIGNAL_OFFSET).toFixed(2) : "-";
+
+function uiapeGetMultipathTextWidth(signalUnit) {
+  switch (String(signalUnit || "").toLowerCase()) {
+    case "dbuv":
+      return "12.5ch";
+    case "dbm":
+      return "12.75ch";
+    case "sunits":
+      return "10.5ch";
+    case "dbf":
+    default:
+      return "11.25ch";
+  }
+}
+
+function uiapeFormatMultipathSignal(dbfValue) {
+  if (!Number.isFinite(dbfValue)) {
+    return { value: "-", unit: "" };
+  }
+
+  const unit = String(localStorage.getItem("signalUnit") || "dbf").toLowerCase();
+
+  if (unit === "dbuv") {
+    return { value: (dbfValue - 11.25).toFixed(2), unit: "dBµV" };
+  }
+
+  if (unit === "dbm") {
+    return { value: (dbfValue - 120).toFixed(2), unit: "dBm" };
+  }
+
+  if (unit === "sunits" && typeof window.dbfToSUnitText === "function") {
+    let freq = NaN;
+
+    if (typeof parsedData !== "undefined" && parsedData && parsedData.freq !== undefined) {
+      freq = parsedData.freq;
+    } else {
+      const freqEl = document.getElementById("data-frequency");
+      if (freqEl) freq = parseFloat(freqEl.textContent);
+    }
+
+    return {
+      value: window.dbfToSUnitText(dbfValue, freq),
+      unit: ""
+    };
+  }
+
+  return { value: dbfValue.toFixed(2), unit: "dBf" };
+}
+
+    const multipathSignalDbf =
+      (Number.isFinite(uiapeMultipathSig) && uiapeMultipathSigDisplay !== "")
+        ? (uiapeMultipathSig + SIGNAL_OFFSET)
+        : NaN;
+    const formattedSignal = uiapeFormatMultipathSignal(multipathSignalDbf);
+    const signalDisplay = formattedSignal.unit
+      ? `${formattedSignal.value} ${formattedSignal.unit}`
+      : formattedSignal.value;
+
     const multipathText = uiapeMultipathTooltipSigRaw || "-";
-    const tooltipText = `Multipath/Co-channel indicator. <br><strong>Signal: ${signalText} dBf, Multipath: ${multipathText}`;
+    const tooltipText = `Multipath/Co-channel indicator. <br><strong>Signal: ${signalDisplay}, Multipath: ${multipathText}`;
 
     const textElement = document.createElement('span');
     textElement.classList.add('multipath-rfmp-text');
-    textElement.innerHTML = `<span>RF: ${signalText} dBf</span><span>MP: ${multipathText}</span>`;
+    textElement.style.width = uiapeGetMultipathTextWidth(
+      String(localStorage.getItem("signalUnit") || "dbf")
+    );
+    textElement.innerHTML = `<span>RF: ${signalDisplay}</span><span>MP: ${multipathText}</span>`;
 
     if (showMultipathIcon) iconSpan.appendChild(iconElement);
     if (showMultipathText) iconSpan.appendChild(textElement);
+
+    // The RF/MP block uses its natural content width. The existing row
+    // Preset/Uniform/Auto gap controls spacing to the following icon.
 
     if (isRdsStyleMode) {
       iconSpan.classList.add('tooltip');
@@ -6312,6 +6841,25 @@ ${getUiapPanelConfig().RDS_ICON_STYLE ? `
   margin: 0;
   flex-shrink: 0;
 }
+
+#ptyLabel.uiape-pty-icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#ptyLabel.uiape-pty-icon-text i {
+  font-size: 11px;
+  line-height: 1;
+  color: inherit;
+  filter: inherit;
+}
 ` : ''}
 
 /* BW Label */
@@ -6460,6 +7008,237 @@ const PTY_TABLE = [
   "Oldies Music", "Folk Music", "Documentary"
 ];
 
+const UIAPE_PTY_ICON_BY_CODE = {
+  0: "fa-circle-question",
+  1: "fa-newspaper",
+  2: "fa-comments",
+  3: "fa-circle-info",
+  4: "fa-futbol",
+  5: "fa-graduation-cap",
+  6: "fa-masks-theater",
+  7: "fa-landmark",
+  8: "fa-microscope",
+  9: "fa-shapes",
+  10: "fa-star",
+  11: "fa-guitar",
+  12: "fa-headphones",
+  13: "fa-feather-pointed",
+  14: "fa-scroll",
+  15: "fa-compact-disc",
+  16: "fa-cloud-sun",
+  17: "fa-sack-dollar",
+  18: "fa-child-reaching",
+  19: "fa-people-group",
+  20: "fa-place-of-worship",
+  21: "fa-phone-volume",
+  22: "fa-plane-departure",
+  23: "fa-gamepad",
+  24: "fa-drum",
+  25: "fa-hat-cowboy",
+  26: "fa-earth-europe",
+  27: "fa-radio",
+  28: "fa-wheat-awn",
+  29: "fa-film",
+  30: "fa-triangle-exclamation",
+  31: "fa-circle-exclamation"
+};
+
+const UIAPE_PTY_TEXT_ICON_OVERRIDES = {
+  "NO PROGRAMME TYPE DEFINED": "fa-circle-question",
+  "PTY": "fa-circle-question",
+  "NEWS": "fa-newspaper",
+  "CURRENT AFFAIRS": "fa-comments",
+  "AFFAIRS": "fa-comments",
+  "INFORMATION": "fa-circle-info",
+  "INFO": "fa-circle-info",
+  "SPORT": "fa-futbol",
+  "SPORTS": "fa-futbol",
+  "TALK": "fa-microphone-lines",
+  "EDUCATION": "fa-graduation-cap",
+  "DRAMA": "fa-masks-theater",
+  "CULTURE": "fa-landmark",
+  "SCIENCE": "fa-microscope",
+  "VARIED": "fa-shapes",
+  "VARIED SPEECH": "fa-shapes",
+  "POP MUSIC": "fa-star",
+  "POPULAR MUSIC": "fa-star",
+  "ROCK MUSIC": "fa-guitar",
+  "ROCK": "fa-guitar",
+  "CLASSIC ROCK": "fa-hand-fist",
+  "ADULT HITS": "fa-star-half-stroke",
+  "SOFT ROCK": "fa-cloud",
+  "TOP 40": "fa-fire",
+  "EASY LISTENING": "fa-headphones",
+  "EASY": "fa-headphones",
+  "LIGHT CLASSICAL": "fa-solid fa-drum",
+  "SERIOUS CLASSICAL": "fa-solid fa-drum",
+  "CLASSICAL": "fa-solid fa-drum",
+  "OTHER MUSIC": "fa-compact-disc",
+  "COUNTRY MUSIC": "fa-hat-cowboy",
+  "COUNTRY": "fa-hat-cowboy",
+  "OLDIES MUSIC": "fa-radio",
+  "OLDIES": "fa-radio",
+  "SOFT MUSIC": "fa-volume-low",
+  "NOSTALGIA": "fa-clock-rotate-left",
+  "JAZZ MUSIC": "fa-drum",
+  "JAZZ": "fa-drum",
+  "RHYTHM & BLUES": "fa-record-vinyl",
+  "R&B": "fa-record-vinyl",
+  "SOFT RHYTHM & BLUES": "fa-wave-square",
+  "SOFT R&B": "fa-wave-square",
+  "LANGUAGE": "fa-language",
+  "WEATHER": "fa-cloud-sun",
+  "FINANCE": "fa-sack-dollar",
+  "CHILDREN'S PROGRAMMES": "fa-child-reaching",
+  "CHILDREN": "fa-child-reaching",
+  "SOCIAL AFFAIRS": "fa-people-group",
+  "SOCIAL": "fa-people-group",
+  "RELIGION": "fa-place-of-worship",
+  "RELIGIOUS MUSIC": "fa-church",
+  "RELIGIOUS TALK": "fa-hands-praying",
+  "PHONE-IN": "fa-phone-volume",
+  "PERSONALITY": "fa-user-tie",
+  "TRAVEL": "fa-plane-departure",
+  "TRAVEL & TOURING": "fa-plane-departure",
+  "PUBLIC": "fa-building-columns",
+  "COLLEGE": "fa-school",
+  "LEISURE": "fa-gamepad",
+  "LEISURE & HOBBY": "fa-gamepad",
+  "NATIONAL MUSIC": "fa-earth-europe",
+  "FOLK MUSIC": "fa-wheat-awn",
+  "DOCUMENTARY": "fa-film",
+  "ALARM TEST": "fa-triangle-exclamation",
+  "EMERGENCY TEST": "fa-triangle-exclamation",
+  "ALARM": "fa-circle-exclamation",
+  "EMERGENCY": "fa-circle-exclamation"
+};
+
+const UIAPE_PTY_COMPACT_LABELS = {
+  "NO PROGRAMME TYPE DEFINED": "NONE",
+  "PTY": "PTY",
+  "NEWS": "NEWS",
+  "CURRENT AFFAIRS": "AFFAIRS",
+  "AFFAIRS": "AFFAIRS",
+  "INFORMATION": "INFO",
+  "INFO": "INFO",
+  "SPORT": "SPORT",
+  "SPORTS": "SPORT",
+  "TALK": "TALK",
+  "EDUCATION": "EDUCATE",
+  "DRAMA": "DRAMA",
+  "CULTURE": "CULTURE",
+  "SCIENCE": "SCIENCE",
+  "VARIED": "VARIED",
+  "VARIED SPEECH": "VARIED",
+  "POP MUSIC": "POP M",
+  "POPULAR MUSIC": "POP M",
+  "ROCK MUSIC": "ROCK M",
+  "ROCK": "ROCK",
+  "CLASSIC ROCK": "CL ROCK",
+  "ADULT HITS": "ADULT HIT",
+  "SOFT ROCK": "SOFT RCK",
+  "TOP 40": "TOP 40",
+  "EASY LISTENING": "EASY M",
+  "EASY": "EASY M",
+  "LIGHT CLASSICAL": "LIGHT M",
+  "SERIOUS CLASSICAL": "CLASSICS",
+  "CLASSICAL": "CLASSICS",
+  "OTHER MUSIC": "OTHER M",
+  "COUNTRY MUSIC": "COUNTRY",
+  "COUNTRY": "COUNTRY",
+  "OLDIES MUSIC": "OLDIES",
+  "OLDIES": "OLDIES",
+  "SOFT MUSIC": "SOFT M",
+  "NOSTALGIA": "NOSTALGA",
+  "JAZZ MUSIC": "JAZZ",
+  "JAZZ": "JAZZ",
+  "RHYTHM & BLUES": "R & B",
+  "R&B": "R & B",
+  "SOFT RHYTHM & BLUES": "SOFT R&B",
+  "SOFT R&B": "SOFT R&B",
+  "LANGUAGE": "LANGUAGE",
+  "WEATHER": "WEATHER",
+  "FINANCE": "FINANCE",
+  "CHILDREN'S PROGRAMMES": "CHILDREN",
+  "CHILDREN": "CHILDREN",
+  "SOCIAL AFFAIRS": "SOCIAL",
+  "SOCIAL": "SOCIAL",
+  "RELIGION": "RELIGION",
+  "RELIGIOUS MUSIC": "REL MUSIC",
+  "RELIGIOUS TALK": "REL TALK",
+  "PHONE-IN": "PHONE IN",
+  "PERSONALITY": "PERSNLTY",
+  "TRAVEL": "TRAVEL",
+  "TRAVEL & TOURING": "TRAVEL",
+  "PUBLIC": "PUBLIC",
+  "COLLEGE": "COLLEGE",
+  "LEISURE": "LEISURE",
+  "LEISURE & HOBBY": "LEISURE",
+  "NATIONAL MUSIC": "NATION M",
+  "FOLK MUSIC": "FOLK M",
+  "DOCUMENTARY": "DOCUMENT",
+  "ALARM TEST": "TEST",
+  "EMERGENCY TEST": "TEST",
+  "ALARM": "ALARM",
+  "EMERGENCY": "ALERT"
+};
+
+function uiapeNormalizePtyText(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+function uiapeGetPtyIconClass(ptyText, ptyIndex) {
+  const normalized = uiapeNormalizePtyText(ptyText);
+  return UIAPE_PTY_TEXT_ICON_OVERRIDES[normalized] || UIAPE_PTY_ICON_BY_CODE[ptyIndex] || "fa-tag";
+}
+
+function uiapeGetCompactPtyLabel(ptyText) {
+  const normalized = uiapeNormalizePtyText(ptyText);
+  if (!normalized || normalized === "PTY") return "PTY";
+  if (UIAPE_PTY_COMPACT_LABELS[normalized]) return UIAPE_PTY_COMPACT_LABELS[normalized];
+  return normalized.length <= 11 ? normalized : normalized.slice(0, 11).trim();
+}
+
+function uiapeRenderPtyLabel(ptyLabel, ptyText, ptyIndex, cfg) {
+  if (!ptyLabel) return;
+
+  const displayMode = String(cfg?.PTY_DISPLAY_MODE || "FULL").toUpperCase();
+  const hasPty = ptyText !== "PTY";
+  const shortLabel = uiapeGetCompactPtyLabel(ptyText);
+
+  ptyLabel.classList.toggle("uiape-pty-icon-text", displayMode === "ICON_SHORT" && hasPty);
+  ptyLabel.setAttribute("title", ptyText);
+  ptyLabel.setAttribute("aria-label", ptyText);
+
+  if (!hasPty) {
+    ptyLabel.textContent = ptyText;
+    return;
+  }
+
+  if (displayMode === "SHORT") {
+    ptyLabel.textContent = shortLabel;
+    return;
+  }
+
+  if (displayMode !== "ICON_SHORT") {
+    ptyLabel.textContent = ptyText;
+    return;
+  }
+
+  ptyLabel.textContent = "";
+
+  const icon = document.createElement("i");
+  icon.className = `fa-solid ${uiapeGetPtyIconClass(ptyText, ptyIndex)}`;
+  icon.setAttribute("aria-hidden", "true");
+
+  const label = document.createElement("span");
+  label.className = "uiape-pty-icon-text-label";
+  label.textContent = shortLabel;
+
+  ptyLabel.appendChild(icon);
+  ptyLabel.appendChild(label);
+}
+
 // webp images
 let rds_off_webp_1, rds_on_webp_1, rds_off_webp_2, rds_on_webp_2;
 
@@ -6596,7 +7375,7 @@ function handleTextSocketMessage(message) {
     const ptyIcon = ensurePtyOverlayIcon();
 
     if (ptyLabel) {
-      ptyLabel.textContent = ptyText;
+      uiapeRenderPtyLabel(ptyLabel, ptyText, ptyIndex, liveRdsCfg);
 
       // --- message.ms ---
       ptyIcon.innerHTML = "";
@@ -6660,13 +7439,16 @@ function handleTextSocketMessage(message) {
   // --- ECC ---
   const eccWrapper = document.getElementById('eccWrapper');
   if (eccWrapper) {
+    // The native Webserver flag is the single source of truth.
+    // If .data-flag is populated, render Flag / Country Code / Flag+CC.
+    // If it is empty, fall back to the normal ECC placeholder.
     eccWrapper._uiapeEccState = {
-      hasEcc: message.ecc !== undefined && message.ecc !== null && message.ecc !== "",
       eccPreset: uiapeGetActiveRdsPreset(liveRdsCfg),
       noEccColor: resolveIconColor(ECC_INDICATOR_COLOR_OFF, "#696969")
     };
     uiapeRebuildEccWrapperContent(eccWrapper);
     uiapeGuardEccWrapper(eccWrapper);
+    uiapeBindNativeEccObserver(eccWrapper);
   }
 
   // --- Stereo ---
@@ -7073,23 +7855,26 @@ function handleTextSocketMessage(message) {
     }
 
     function uiapeRebuildEccWrapperContent(eccWrapper) {
-        const state = eccWrapper._uiapeEccState;
-        if (!state) return;
-        const { hasEcc, eccPreset, noEccColor } = state;
+        const state = eccWrapper._uiapeEccState || {};
         const liveCfg = getUiapPanelConfig();
         const reduceHalfOpacity = liveCfg.REDUCE_HALF_OPACITY;
         const offOpacity = reduceHalfOpacity === true ? '0.6' : '0.9';
         const mmInstalled = liveCfg.METRICS_MONITOR_PLUGIN_IS_INSTALLED;
+        const eccPreset = state.eccPreset || uiapeGetActiveRdsPreset(liveCfg);
+        const noEccColor = state.noEccColor || resolveIconColor(liveCfg.ECC_INDICATOR_COLOR_OFF, "#696969");
 
-        // Also applied here so it still works when Metrics Monitor owns eccWrapper
-        eccWrapper.style.marginRight = eccPreset.ECC_ICON_SPACING + 'px';
-        // Fixed width stops later icons shifting when Metrics Monitor's own placeholder/flag differ in size
+        {
+          const spacingCfg = uiapeGetHorizontalSpacingConfig(eccPreset);
+          eccWrapper.style.marginRight = spacingCfg.mode === "PRESET"
+            ? eccPreset.ECC_ICON_SPACING + 'px'
+            : '0px';
+        }
+
         eccWrapper.style.minWidth = mmInstalled ? '32px' : '';
         eccWrapper.style.justifyContent = mmInstalled ? 'center' : '';
-
         eccWrapper.innerHTML = "";
 
-        if (!hasEcc) {
+        if (!uiapeAppendActiveEccContent(eccWrapper, eccPreset, liveCfg, mmInstalled)) {
             const noEcc = document.createElement('span');
             noEcc.textContent = 'ECC';
             noEcc.style.color = noEccColor;
@@ -7101,38 +7886,16 @@ function handleTextSocketMessage(message) {
             noEcc.style.display = 'inline-flex';
             noEcc.style.alignItems = 'center';
             noEcc.style.height = uiapeResolveLiveRdsIconHeight(eccPreset, "ECC", eccPreset.PTY_HEIGHT) + 'px';
-            noEcc.style.paddingBottom = '0.5px'; // Value that aligns for both Firefox and Chrome
+            noEcc.style.paddingBottom = isFirefox ? '1px' : '0';
             if (reduceHalfOpacity) noEcc.style.opacity = offOpacity;
             eccWrapper.appendChild(noEcc);
-        } else {
-            const eccSpan = document.querySelector('.data-flag:not(#eccWrapper *)');
-            if (eccSpan && eccSpan.innerHTML.trim() !== "") {
-                const newSpan = eccSpan.cloneNode(true);
-                // #eccWrapper only centers when Metrics Monitor owns the row, so the nudge only applies there too
-                const eccFlagLeftInset = (Number(eccPreset.ECC_FLAG_SPACING) || 0) + (mmInstalled ? Number(liveCfg.ECC_FLAG_SPACING_METRICS_MONITOR) || 0 : 0);
-                newSpan.style.marginLeft = eccFlagLeftInset + 'px';
-                newSpan.style.marginRight = (UIAPE_ECC_FLAG_RESERVED_WIDTH - eccFlagLeftInset) + 'px';
-                newSpan.style.marginTop = "0";
-                newSpan.style.transform = "translateY(0)";
-                newSpan.style.display = "inline-flex";
-                newSpan.style.alignItems = "center";
-                newSpan.style.height = "17px";
-                newSpan.style.lineHeight = "17px";
-                eccWrapper.appendChild(newSpan);
-            } else {
-                // Fallback
-                const noEcc = document.createElement('span');
-                noEcc.textContent = 'ECC';
-                noEcc.style.color = noEccColor;
-                noEcc.style.fontSize = '13px';
-                eccWrapper.appendChild(noEcc);
-            }
         }
 
-        // Discards the mutation records this just generated, so the guard below ignores its own rebuild
         if (eccWrapper._uiapeEccGuard) eccWrapper._uiapeEccGuard.takeRecords();
         eccWrapper._uiapeRebuildGen = (eccWrapper._uiapeRebuildGen || 0) + 1;
     }
+
+    uiapeRebuildEccWrapperContentFn = uiapeRebuildEccWrapperContent;
 
     // Rebuilds if another plugin (e.g. Metrics Monitor) clears/rebuilds #eccWrapper too
     function uiapeGuardEccWrapper(eccWrapper) {
@@ -7405,16 +8168,15 @@ function createIconElement(iconType, preset) {
       eccWrapper.style.display = 'inline-flex';
       eccWrapper.style.alignItems = 'center';
       eccWrapper.style.whiteSpace = 'nowrap';
-      eccWrapper.style.marginRight = preset.ECC_ICON_SPACING + 'px';
-      const eccSpan = document.querySelector('.data-flag:not(#eccWrapper *)');
-      if (eccSpan && eccSpan.innerHTML.trim() !== "") {
-        const eccClone = eccSpan.cloneNode(true);
-        // This path only runs when Metrics Monitor isn't installed, so no centering nudge needed here
-        const eccFlagLeftInset = Number(preset.ECC_FLAG_SPACING) || 0;
-        eccClone.style.marginLeft = eccFlagLeftInset + 'px';
-        eccClone.style.marginRight = (UIAPE_ECC_FLAG_RESERVED_WIDTH - eccFlagLeftInset) + 'px';
-        eccWrapper.appendChild(eccClone);
-      } else {
+      {
+        const spacingCfg = uiapeGetHorizontalSpacingConfig(preset);
+        eccWrapper.style.marginRight = spacingCfg.mode === "PRESET"
+          ? preset.ECC_ICON_SPACING + 'px'
+          : '0px';
+      }
+      const liveEccCfg = getUiapPanelConfig();
+      uiapeBindNativeEccObserver(eccWrapper);
+      if (!uiapeAppendActiveEccContent(eccWrapper, preset, liveEccCfg, false)) {
         const noEccColor = resolveIconColor(getUiapPanelConfig().ECC_INDICATOR_COLOR_OFF, "#696969");
         const noEcc = document.createElement('span');
         noEcc.textContent = 'ECC';
@@ -7441,7 +8203,12 @@ function createIconElement(iconType, preset) {
         stereoClone.removeAttribute('style');
         stereoClone.classList.add("tooltip");
         stereoClone.setAttribute("data-tooltip", "Stereo / Mono toggle.<br><strong>Click to toggle.</strong>");
-        stereoClone.style.marginRight = preset.STEREO_ICON_SPACING + 'px';
+        {
+          const spacingCfg = uiapeGetHorizontalSpacingConfig(preset);
+          stereoClone.style.marginRight = spacingCfg.mode === "PRESET"
+            ? preset.STEREO_ICON_SPACING + 'px'
+            : '0px';
+        }
         return stereoClone;
       }
       return null;
@@ -7502,19 +8269,112 @@ function createIconElement(iconType, preset) {
 }
 
 // Helper function to create a row of icons
+function uiapeGetHorizontalSpacingConfig(preset) {
+  const cfg = getUiapPanelConfig();
+  const mode = String(cfg.HORIZONTAL_ICON_SPACING_MODE || "PRESET").toUpperCase();
+
+  let uniform = Number(cfg.HORIZONTAL_ICON_SPACING_UNIFORM);
+  if (!Number.isFinite(uniform)) uniform = 8;
+
+  let autoMin = Number(cfg.HORIZONTAL_ICON_SPACING_AUTO_MIN);
+  if (!Number.isFinite(autoMin)) autoMin = 4;
+
+  let autoMax = Number(cfg.HORIZONTAL_ICON_SPACING_AUTO_MAX);
+  if (!Number.isFinite(autoMax)) autoMax = 14;
+
+  if (autoMin > autoMax) [autoMin, autoMax] = [autoMax, autoMin];
+  return { mode, uniform, autoMin, autoMax, preset };
+}
+
+function uiapeMeasureDirectRowItems(row) {
+  return Array.from(row.children).reduce((sum, el) => {
+    const rect = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return sum + rect.width + (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0);
+  }, 0);
+}
+
+function uiapeDisposeAutoSpacingObserver(row) {
+  if (!row?._uiapeSpacingObserver) return;
+  try {
+    row._uiapeSpacingObserver.disconnect();
+  } catch (error) {}
+  row._uiapeSpacingObserver = null;
+}
+
+function uiapeApplyAutoHorizontalSpacing(row, spacingCfg) {
+  const update = () => {
+    if (!row?.isConnected) return;
+    const items = Array.from(row.children);
+    if (items.length <= 1) {
+      row.style.gap = '0px';
+      return;
+    }
+
+    const rowWidth = row.getBoundingClientRect().width;
+    const contentWidth = uiapeMeasureDirectRowItems(row);
+    const safeWidth = Math.max(0, rowWidth * 0.92);
+    const rawGap = (safeWidth - contentWidth) / Math.max(items.length - 1, 1);
+    const gap = Math.max(spacingCfg.autoMin, Math.min(rawGap, spacingCfg.autoMax));
+
+    row.style.gap = `${Number.isFinite(gap) ? gap.toFixed(2) : spacingCfg.autoMin}px`;
+    row.style.justifyContent = 'center';
+    row.style.maxWidth = '92%';
+    row.style.marginInline = 'auto';
+  };
+
+  requestAnimationFrame(update);
+
+  if (!row._uiapeSpacingObserver && typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(() => requestAnimationFrame(update));
+    observer.observe(row);
+    if (row.parentElement) observer.observe(row.parentElement);
+    row._uiapeSpacingObserver = observer;
+  }
+}
+
+function uiapeApplyHorizontalSpacing(row, preset, isFirstRow) {
+  const spacingCfg = uiapeGetHorizontalSpacingConfig(preset);
+
+  if (spacingCfg.mode !== "AUTO") {
+    uiapeDisposeAutoSpacingObserver(row);
+  }
+
+  row.style.justifyContent = 'center';
+  row.style.maxWidth = '';
+  row.style.marginInline = '';
+
+  if (spacingCfg.mode === "UNIFORM") {
+    row.style.gap = `${spacingCfg.uniform}px`;
+  } else if (spacingCfg.mode === "AUTO") {
+    row.style.gap = `${spacingCfg.autoMin}px`;
+    uiapeApplyAutoHorizontalSpacing(row, spacingCfg);
+  } else {
+    row.style.gap = `${isFirstRow ? preset.FIRST_ROW_GAP : preset.SECOND_ROW_GAP}px`;
+  }
+
+  return spacingCfg;
+}
+
+function uiapeDisposeSignalRowObservers(root = document.getElementById("signal-icons")) {
+  if (!root) return;
+  root.querySelectorAll('[data-uiape-icon-row="1"]').forEach(uiapeDisposeAutoSpacingObserver);
+}
+
 function createIconRow(iconList, isFirstRow, preset) {
   const row = document.createElement('div');
+  row.dataset.uiapeIconRow = "1";
   row.style.display = 'flex';
   row.style.alignItems = 'center';
   row.style.justifyContent = 'center';
   row.style.width = '100%';
   row.style.flexWrap = 'nowrap';
 
+  const horizontalSpacing = uiapeApplyHorizontalSpacing(row, preset, isFirstRow);
+
   if (isFirstRow) {
-    row.style.gap = preset.FIRST_ROW_GAP + 'px';
     row.style.transform = `translateY(${preset.GAP_ROW_1}px)`;
   } else {
-    row.style.gap = preset.SECOND_ROW_GAP + 'px';
     row.style.transform = `translateY(${preset.GAP_ROW_2}px)`;
   }
 
@@ -7533,7 +8393,13 @@ function createIconRow(iconList, isFirstRow, preset) {
       const tpTaWrapper = document.createElement('span');
       tpTaWrapper.style.display = 'inline-flex';
       tpTaWrapper.style.alignItems = 'center';
-      tpTaWrapper.style.gap = preset.TP_TA_GAP + 'px';
+      tpTaWrapper.style.gap = (
+        horizontalSpacing.mode === "PRESET"
+          ? preset.TP_TA_GAP
+          : horizontalSpacing.mode === "UNIFORM"
+            ? horizontalSpacing.uniform
+            : horizontalSpacing.autoMin
+      ) + 'px';
 
       const firstIcon = createIconElement(filteredList[i], preset);
       const secondIcon = createIconElement(filteredList[i + 1], preset);
@@ -7556,6 +8422,7 @@ function createIconRow(iconList, isFirstRow, preset) {
 
 // Re-resolves the preset live and rebuilds from scratch, safe to call again on preset changes
 function insertSignalPanel() {
+  uiapeDisposeSignalRowObservers();
   // Metrics Monitor builds its own #signalPanel; defer to it instead of racing to build ours first
   if (getUiapPanelConfig().METRICS_MONITOR_PLUGIN_IS_INSTALLED) return;
 
@@ -7645,6 +8512,12 @@ uiapeRebuildRdsIconPanel = insertSignalPanel;
 
 // Reverses insertSignalPanel, removes the custom panel and shows the native flags panel again
 function uiapeTeardownRdsIconStylePanel() {
+  uiapeDisposeSignalRowObservers();
+
+  if (uiapeNativeEccObserver) {
+    uiapeNativeEccObserver.disconnect();
+    uiapeNativeEccObserver = null;
+  }
   const signalPanelElement = document.getElementById('signalPanel');
   const nativeContainer = document.querySelector('#flags-container-desktop');
   // #signalPanel that exists but belongs to another plugin is to be left alone
