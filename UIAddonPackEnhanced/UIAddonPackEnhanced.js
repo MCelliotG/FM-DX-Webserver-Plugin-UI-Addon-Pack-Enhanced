@@ -1,5 +1,5 @@
 /*
-    UI Add-on Pack Enhanced v1.0.6 by AAD
+    UI Add-on Pack Enhanced v1.1.0 by AAD
     -------------------------------------
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced
 */
@@ -13,7 +13,7 @@ const UIAPE_SEARCH_INCLUDE_DESCRIPTIONS = false;
 // Signal offset in dB
 const SIGNAL_OFFSET = 0.00;
 
-const pluginVersion = '1.0.6';
+const pluginVersion = '1.1.0';
 const pluginName = "UI Add-on Pack Enhanced";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced/refs/heads/main/UIAddonPackEnhanced/UIAddonPackEnhanced.js";
@@ -212,6 +212,8 @@ const UIAPE_LIVE_CSS_KEYS = new Set([
   "PANEL_STYLE_EFFECT",
   "PANEL_STYLE_EFFECT_SIGNAL_PANEL",
   "RDS_ICON_STYLE_REMOVE_RDS_ICON",
+  "PTY_ICON_OFFSET_Y",
+  "PTY_ICON_GAP",
   "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
   "RDS_ICON_STYLE_MOBILE",
   "RDS_ICON_SCALE",
@@ -414,6 +416,8 @@ const UIAPE_DEFAULT_CONFIG = {
   RDS_ICON_STYLE: false,
   RDS_ICON_STYLE_MOBILE: false,
   PTY_DISPLAY_MODE: "FULL",
+  PTY_ICON_OFFSET_Y: 0,
+  PTY_ICON_GAP: 4,
   ECC_DISPLAY_MODE: "FLAG",
   ECC_INDICATOR_COLOR: "",
   LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC: false,
@@ -948,6 +952,13 @@ const UIAPE_MESSAGE_DRIVEN_KEYS = new Set([
 
 // Live CSS keys apply instantly, other keys are tracked so we can warn a reload is needed
 function uiapeAfterConfigChange(key) {
+  // These render via handleTextSocketMessage, so selecting one has no effect until it's running
+  if (key === "PTY_DISPLAY_MODE" || key === "ECC_DISPLAY_MODE") {
+    if (!uiapeRdsIconStylePanelReady && uiapeInitRdsIconStylePanelFn &&
+        !uiapeIsVisualEqActive(getUiapPanelConfig()) && window.innerWidth > 360) {
+      uiapeInitRdsIconStylePanelFn();
+    }
+  }
   if (UIAPE_LIVE_CSS_KEYS.has(key)) {
     uiapeRefreshLiveCss();
     return;
@@ -1614,6 +1625,21 @@ ${cfg.RDS_ICON_STYLE ? `
   height: ${uiapeResolveLiveRdsIconHeight(rdsPreset, "MS", rdsPreset.PTY_HEIGHT)}px !important;
 }
 
+/* PTY Label (Enhanced-owned row only, Metrics Monitor styles its own #ptyLabel) */
+#ptyLabel {
+  font-size: 13px;
+  color: #fff;
+  text-align: center;
+  min-width: 96px;
+  position: relative;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  margin: 0;
+  flex-shrink: 0;
+}
+
 #rdsIcon {
   height: ${cfg.RDS_INDICATOR_ICON_TYPE === 1 ? 14 : 18}px !important;
   width: auto !important;
@@ -1645,6 +1671,30 @@ ${cfg.RDS_ICON_STYLE ? `
 
 .multipath-rfmp-text span {
   font-size: ${Number.isFinite(Number(cfg.MULTIPATH_TEXT_SIZE)) ? Number(cfg.MULTIPATH_TEXT_SIZE) : 105}%;
+}
+`;
+
+  // Ungated, the class only exists in Icon & short label mode, so this also works when
+  // Metrics Monitor owns #ptyLabel
+  css += `
+#ptyLabel.uiape-pty-icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${Number.isFinite(Number(cfg.PTY_ICON_GAP)) ? Number(cfg.PTY_ICON_GAP) : 4}px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#ptyLabel.uiape-pty-icon-text i {
+  font-size: 11px;
+  line-height: 1;
+  color: inherit;
+  filter: inherit;
+  transform: translateY(${Number.isFinite(Number(cfg.PTY_ICON_OFFSET_Y)) ? Number(cfg.PTY_ICON_OFFSET_Y) : 0}px);
 }
 `;
 
@@ -2951,6 +3001,15 @@ function createUiapConfigLauncher() {
         border-radius: 50%;
         background: var(--color-main-bright, #4da3ff);
         vertical-align: middle;
+        position: relative;
+        cursor: default;
+      }
+
+      /* Invisible hit area, the 4px dot alone is too small to hover reliably */
+      .uiape-config-label strong .uiape-admin-diff-dot::after {
+        content: '';
+        position: absolute;
+        inset: -7px;
       }
 
       .uiape-config-label span {
@@ -3740,6 +3799,8 @@ function createUiapConfigLauncher() {
             ["RDS_ICON_STYLE", "checkbox", "Enable UI Addon Icons Style", "Enables RDS, PTY, TP, TA icons."],
             ["RDS_ICON_STYLE_MOBILE", "checkbox", "Enable UI Addon Icons Style on mobile", "Enables UI Addon Icons Style on mobile, and turns on the setting above too since this depends on it."],
             ["PTY_DISPLAY_MODE", "select", "Show PTY as", "Choose how PTY label is displayed.", [["FULL", "Full label"], ["SHORT", "Short label"], ["ICON_SHORT", "Icon & short label"]]],
+            ["PTY_ICON_OFFSET_Y", "number", "PTY icon vertical offset", "Raises or lowers the PTY icon in pixels. Negative raises. Only used by Icon & short label."],
+            ["PTY_ICON_GAP", "number", "PTY icon spacing", "Gap in pixels between the PTY icon and its text. Only used by Icon & short label."],
 
             ["IS_TEF_RADIO", "checkbox", "TEF radio mode", "Uses TEF radio MP assumption."],
             ["METRICS_MONITOR_PLUGIN_IS_INSTALLED", "checkbox", "Metrics Monitor installed", "Enable if Metrics Monitor plugin is installed."],
@@ -3851,12 +3912,48 @@ function createUiapConfigLauncher() {
           `;
         }
 
+        // The webserver binds tooltips on init, so anything added later needs binding itself
+        let uiapeTooltipTouchTimer = null;
+        const UIAPE_TOOLTIP_TOUCH_HIDE_MS = 1500;
+
+        function uiapeBindPanelTooltips(scope) {
+          if (typeof initTooltips !== "function") return;
+          const root = scope || document.getElementById("uiape-config-panel");
+          if (!root) return;
+          if (root.classList?.contains("tooltip")) initTooltips(root);
+          root.querySelectorAll?.(".tooltip").forEach(el => initTooltips(el));
+
+          // Touch never fires mouseleave, so the webserver leaves the tooltip up for 5s
+          const panelEl = document.getElementById("uiape-config-panel");
+          if (panelEl && !panelEl.dataset.uiapeTooltipTouchBound) {
+            panelEl.dataset.uiapeTooltipTouchBound = "true";
+            panelEl.addEventListener("touchend", (event) => {
+              clearTimeout(uiapeTooltipTouchTimer);
+              if (event.target.closest(".tooltip")) {
+                uiapeTooltipTouchTimer = setTimeout(() => uiapeDismissPanelTooltip(), UIAPE_TOOLTIP_TOUCH_HIDE_MS);
+              } else {
+                uiapeDismissPanelTooltip();
+              }
+            }, { passive: true });
+          }
+        }
+
+        // Removing a hovered element means its mouseleave never fires, so the webserver's tooltip
+        // would linger. Also kills any pending show-timeout for an element about to disappear.
+        function uiapeDismissPanelTooltip(scope) {
+          if (typeof $ !== "function") return;
+          const root = scope || document.getElementById("uiape-config-panel");
+          if (root?.classList?.contains("tooltip")) clearTimeout($(root).data("timeout"));
+          root?.querySelectorAll?.(".tooltip").forEach(el => clearTimeout($(el).data("timeout")));
+          $(".tooltip-wrapper").remove();
+        }
+
         function uiapeRenderResetButton(action, key, isNonDefault) {
           if (!isNonDefault) return "";
           // Inline SVG. Circle's dash starts at 3 o'clock and draws clockwise, so a 270/90
           // dasharray split ends the dash at 12 o'clock, where the tangent is exactly horizontal.
           const icon = `<svg class="uiape-reset-default-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" stroke-dasharray="37.7 12.57"/><path d="M9 1 L12 4 L9 7"/></svg>`;
-          return `<button type="button" class="uiape-reset-default" data-uiape-action="${action}" data-uiape-reset-key="${key}" title="Reset to default" aria-label="Reset to default">${icon}</button>`;
+          return `<button type="button" class="uiape-reset-default tooltip" data-uiape-action="${action}" data-uiape-reset-key="${key}" data-tooltip="Reset to default" aria-label="Reset to default">${icon}</button>`;
         }
 
         // Updates just this row's reset button in place, a full re-render would drop focus while typing
@@ -3873,7 +3970,9 @@ function createUiapConfigLauncher() {
           const existing = container.querySelector(".uiape-reset-default");
           if (shouldShow && !existing) {
             container.insertAdjacentHTML("afterbegin", uiapeRenderResetButton(scope === "preset" ? "reset-preset-field" : "reset-field", key, true));
+            uiapeBindPanelTooltips(container);
           } else if (!shouldShow && existing) {
+            uiapeDismissPanelTooltip(existing);
             existing.remove();
           }
         }
@@ -3881,7 +3980,7 @@ function createUiapConfigLauncher() {
         // Passive indicator only.
         function uiapeRenderAdminDiffDot(differsFromAdmin) {
           if (!differsFromAdmin || uiapeDetectAdminSession()) return "";
-          return `<span class="uiape-admin-diff-dot" title="Differs from the admin's current setting" aria-label="Differs from the admin's current setting"></span>`;
+          return `<span class="uiape-admin-diff-dot tooltip" data-tooltip="Differs from the admin's current setting" aria-label="Differs from the admin's current setting"></span>`;
         }
 
         // Mirrors uiapeSyncResetButton but targets the label and compares against the admin's live config
@@ -3897,7 +3996,9 @@ function createUiapConfigLauncher() {
           if (shouldShow && !existing) {
             // Nested inside <strong>.
             labelEl.querySelector("strong")?.insertAdjacentHTML("beforeend", uiapeRenderAdminDiffDot(true));
+            uiapeBindPanelTooltips(labelEl);
           } else if (!shouldShow && existing) {
+            uiapeDismissPanelTooltip(existing);
             existing.remove();
           }
         }
@@ -3936,7 +4037,7 @@ function createUiapConfigLauncher() {
             // No mobile keyboard reliably offers a minus key even with the attributes above, so
             // this toggles the sign directly, sidestepping the keyboard layout entirely
             if (type === "number") {
-              controlHtml = `<button type="button" class="uiape-number-sign-toggle" data-uiape-action="toggle-sign" title="Toggle negative" aria-label="Toggle negative">&#177;</button>` + controlHtml;
+              controlHtml = `<button type="button" class="uiape-number-sign-toggle tooltip" data-uiape-action="toggle-sign" data-tooltip="Toggle negative" aria-label="Toggle negative">&#177;</button>` + controlHtml;
             }
           }
 
@@ -3947,7 +4048,7 @@ function createUiapConfigLauncher() {
             const adminOnlyKeys = Array.isArray(config.ADMIN_ONLY_KEYS) ? config.ADMIN_ONLY_KEYS : [];
             isAdminOnlyRow = adminOnlyKeys.includes(key);
             adminOnlyToggleHtml = `
-              <label class="uiape-admin-only-toggle" title="Hide this setting from non-admin users">
+              <label class="uiape-admin-only-toggle tooltip" data-tooltip="Hide this setting from non-admin users">
                 <input type="checkbox" data-uiape-admin-only-key="${key}" ${isAdminOnlyRow ? "checked" : ""}>
                 Admin only
               </label>
@@ -3998,10 +4099,10 @@ function createUiapConfigLauncher() {
             const presetNumberAttrs = type === "number" ? ` inputmode="decimal" pattern="-?[0-9]*\\.?[0-9]*" data-uiape-type="number"` : "";
             const inputHtml = type === "select"
               ? `<select data-uiape-preset-field="${key}">${(field[4] || []).map(opt => `<option value="${uiapeEscapeHtml(opt[0])}" ${String(value) === String(opt[0]) ? "selected" : ""}>${uiapeEscapeHtml(opt[1])}</option>`).join("")}</select>`
-              : (type === "number" ? `<button type="button" class="uiape-number-sign-toggle" data-uiape-action="toggle-sign" title="Toggle negative" aria-label="Toggle negative">&#177;</button>` : "") + `<input type="${presetInputType}" data-uiape-preset-field="${key}" value="${uiapeEscapeHtml(value ?? "")}"${presetStepAttr}${presetNumberAttrs}>`;
+              : (type === "number" ? `<button type="button" class="uiape-number-sign-toggle tooltip" data-uiape-action="toggle-sign" data-tooltip="Toggle negative" aria-label="Toggle negative">&#177;</button>` : "") + `<input type="${presetInputType}" data-uiape-preset-field="${key}" value="${uiapeEscapeHtml(value ?? "")}"${presetStepAttr}${presetNumberAttrs}>`;
             const isAdminOnlyRow = adminOnlyKeys.includes(key);
             const adminOnlyToggleHtml = isAdmin ? `
-              <label class="uiape-admin-only-toggle" title="Hide this setting from non-admin users">
+              <label class="uiape-admin-only-toggle tooltip" data-tooltip="Hide this setting from non-admin users">
                 <input type="checkbox" data-uiape-admin-only-key="${key}" ${isAdminOnlyRow ? "checked" : ""}>
                 Admin only
               </label>
@@ -4098,7 +4199,7 @@ function createUiapConfigLauncher() {
               ${uiapePluginRowsForPanel().map(num => {
                 const item = byNum.get(num);
                 const label = uiapePluginLabel(num, item?.[1]);
-                return `<div><code>${num}</code> = ${uiapeEscapeHtml(label)} <button type="button" class="uiape-mini-button uiape-plugin-order-add" data-uiape-action="append-plugin-order" data-uiape-plugin-num="${num}" title="Add ${num} to order">+</button><button type="button" class="uiape-mini-button uiape-plugin-order-remove" data-uiape-action="remove-plugin-order" data-uiape-plugin-num="${num}" title="Remove ${num} from order">-</button></div>`;
+                return `<div><code>${num}</code> = ${uiapeEscapeHtml(label)} <button type="button" class="uiape-mini-button uiape-plugin-order-add tooltip" data-uiape-action="append-plugin-order" data-uiape-plugin-num="${num}" data-tooltip="Add ${num} to order">+</button><button type="button" class="uiape-mini-button uiape-plugin-order-remove tooltip" data-uiape-action="remove-plugin-order" data-uiape-plugin-num="${num}" data-tooltip="Remove ${num} from order">-</button></div>`;
               }).join("")}
             </div>
             ${getUiapPanelConfig().SHOW_CUSTOM_BUTTON_EDITOR ? `
@@ -4111,8 +4212,8 @@ function createUiapConfigLauncher() {
                 const item = byNum.get(num);
                 const label = uiapePluginLabel(num, item?.[1]);
                 const id = uiapePluginButtonId(num, item?.[2]);
-                const deleteButtonHtml = byNum.has(num) ? "<span></span>" : `<button type="button" class="uiape-mini-button uiape-plugin-order-remove" data-uiape-action="delete-custom-plugin" data-uiape-plugin-num="${num}" title="Delete custom button ${num}">\u2715</button>`;
-                return `<div class="uiape-plugin-edit-row"><code>${num}</code><input type="text" data-uiape-custom-plugin-label="${num}" value="${uiapeEscapeHtml(label)}"><input type="text" data-uiape-custom-plugin-map="${num}" value="${uiapeEscapeHtml(id)}" placeholder="button-id"><button type="button" class="uiape-mini-button uiape-plugin-order-add" data-uiape-action="append-plugin-order" data-uiape-plugin-num="${num}" title="Add ${num} to order">+</button><button type="button" class="uiape-mini-button uiape-plugin-order-remove" data-uiape-action="remove-plugin-order" data-uiape-plugin-num="${num}" title="Remove ${num} from order">-</button>${deleteButtonHtml}</div>`;
+                const deleteButtonHtml = byNum.has(num) ? "<span></span>" : `<button type="button" class="uiape-mini-button uiape-plugin-order-remove tooltip" data-uiape-action="delete-custom-plugin" data-uiape-plugin-num="${num}" data-tooltip="Delete custom button ${num}">\u2715</button>`;
+                return `<div class="uiape-plugin-edit-row"><code>${num}</code><input type="text" data-uiape-custom-plugin-label="${num}" value="${uiapeEscapeHtml(label)}"><input type="text" data-uiape-custom-plugin-map="${num}" value="${uiapeEscapeHtml(id)}" placeholder="button-id"><button type="button" class="uiape-mini-button uiape-plugin-order-add tooltip" data-uiape-action="append-plugin-order" data-uiape-plugin-num="${num}" data-tooltip="Add ${num} to order">+</button><button type="button" class="uiape-mini-button uiape-plugin-order-remove tooltip" data-uiape-action="remove-plugin-order" data-uiape-plugin-num="${num}" data-tooltip="Remove ${num} from order">-</button>${deleteButtonHtml}</div>`;
               }).join("")}
             </div>
             <button type="button" class="uiape-mini-button" data-uiape-action="add-plugin-map-row">Add custom button number</button>
@@ -4128,6 +4229,7 @@ function createUiapConfigLauncher() {
         }
 
         function uiapeRenderAllControls() {
+          uiapeDismissPanelTooltip(panel);
           const isAdmin = uiapeDetectAdminSession();
           Object.keys(uiapeControlSections).forEach(sectionName => {
             const target = panel.querySelector(`[data-uiape-controls="${sectionName}"]`);
@@ -4155,6 +4257,7 @@ function createUiapConfigLauncher() {
             }
           });
           uiapeApplySearchFilter();
+          uiapeBindPanelTooltips(panel);
         }
 
         // Re-applies the search query's row/section visibility, called after every re-render so it survives things like preset switches
@@ -6108,7 +6211,7 @@ function uiapeFormatMultipathSignal(dbfValue) {
   const unit = String(localStorage.getItem("signalUnit") || "dbf").toLowerCase();
 
   if (unit === "dbuv") {
-    return { value: (dbfValue - 11.25).toFixed(2), unit: "dBµV" };
+    return { value: (dbfValue - 11.25).toFixed(2), unit: "dB\u00B5V" };
   }
 
   if (unit === "dbm") {
@@ -6821,46 +6924,14 @@ style.innerHTML = `
   cursor: pointer;
 }
 
+/* Metrics Monitor renders its own CSS tooltip for any .tooltip in #signal-icons, which would
+   show alongside the webserver's */
 #signal-icons #stereoIcon.tooltip::after,
+#signal-icons #ptyLabel.tooltip::after,
 #signal-icons .multipath-container.tooltip::after {
   display: none !important;
 }
 
-${getUiapPanelConfig().RDS_ICON_STYLE ? `
-/* PTY Label (Enhanced-owned row only; Metrics Monitor styles its own #ptyLabel) */
-#ptyLabel {
-  font-size: 13px;
-  color: #fff;
-  text-align: center;
-  min-width: 96px;
-  position: relative;
-  border: 1px solid #fff;
-  border-radius: 3px;
-  padding: 0 4px;
-  box-sizing: border-box;
-  margin: 0;
-  flex-shrink: 0;
-}
-
-#ptyLabel.uiape-pty-icon-text {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .035em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-#ptyLabel.uiape-pty-icon-text i {
-  font-size: 11px;
-  line-height: 1;
-  color: inherit;
-  filter: inherit;
-}
-` : ''}
 
 /* BW Label */
 #bwLabel {
@@ -7207,8 +7278,16 @@ function uiapeRenderPtyLabel(ptyLabel, ptyText, ptyIndex, cfg) {
   const shortLabel = uiapeGetCompactPtyLabel(ptyText);
 
   ptyLabel.classList.toggle("uiape-pty-icon-text", displayMode === "ICON_SHORT" && hasPty);
-  ptyLabel.setAttribute("title", ptyText);
+  ptyLabel.classList.add("tooltip");
+  ptyLabel.setAttribute("data-tooltip", ptyText);
   ptyLabel.setAttribute("aria-label", ptyText);
+  // jQuery caches data-* on first read, so the attribute alone would leave a stale tooltip
+  if (typeof $ === "function") $(ptyLabel).data("tooltip", ptyText);
+  if (!ptyLabel._uiapeTooltipBound && typeof initTooltips === "function") {
+    ptyLabel._uiapeTooltipBound = true;
+    ptyLabel.style.cursor = "default";
+    initTooltips(ptyLabel);
+  }
 
   if (!hasPty) {
     ptyLabel.textContent = ptyText;
@@ -7376,6 +7455,8 @@ function handleTextSocketMessage(message) {
 
     if (ptyLabel) {
       uiapeRenderPtyLabel(ptyLabel, ptyText, ptyIndex, liveRdsCfg);
+      ptyLabel._uiapePtyState = { ptyText, ptyIndex, desiredHtml: ptyLabel.innerHTML };
+      uiapeGuardPtyLabel(ptyLabel);
 
       // --- message.ms ---
       ptyIcon.innerHTML = "";
@@ -7816,17 +7897,32 @@ function handleTextSocketMessage(message) {
                 }
             };
 
-            if (window.__uiapeGuardTripped) {
-                applyCorrection();
-                return;
-            }
-            if (icon._uiapeGuardTimer) return;
-            icon._uiapeGuardTimer = setTimeout(() => {
-                icon._uiapeGuardTimer = null;
-                applyCorrection();
-            }, 20);
+            // Corrects in the observer callback.
+            applyCorrection();
         });
         icon._uiapeColorGuard.observe(icon, { attributes: true, attributeFilter: ['style'] });
+    }
+
+    // Metrics Monitor rewrites ptyLabel.textContent on every message, which wipes the short/icon
+    // label. Uses its own timer property, since the colour guard above also runs on this element.
+    function uiapeGuardPtyLabel(ptyLabel) {
+        if (ptyLabel._uiapePtyGuard) return;
+        ptyLabel._uiapePtyGuard = new MutationObserver(() => {
+            const rerender = () => {
+                const state = ptyLabel._uiapePtyState;
+                if (!state || ptyLabel.innerHTML === state.desiredHtml) return;
+                uiapeRenderPtyLabel(ptyLabel, state.ptyText, state.ptyIndex, getUiapPanelConfig());
+                state.desiredHtml = ptyLabel.innerHTML;
+                ptyLabel._uiapePtyGuard.takeRecords();
+                if (!window.__uiapeGuardTripped) {
+                    window.__uiapeGuardTripped = true;
+                    console.log(`[${pluginName}] Metrics Monitor conflict detected, guard now correcting instantly`);
+                }
+            };
+
+            rerender();
+        });
+        ptyLabel._uiapePtyGuard.observe(ptyLabel, { childList: true, characterData: true, subtree: true });
     }
 
     function applyTextIndicatorColor(icon, isOn, activeColorSetting, offColorSetting, glowEnabled, glowIntensity = RDS_INDICATOR_ICON_GLOW_INTENSITY) {
@@ -7909,17 +8005,9 @@ function handleTextSocketMessage(message) {
                 uiapeRebuildEccWrapperContent(eccWrapper);
             };
 
-            if (window.__uiapeGuardTripped) {
-                rebuild();
-                return;
-            }
-            if (eccWrapper._uiapeGuardTimer) return;
-            const genAtDetection = eccWrapper._uiapeRebuildGen;
-            eccWrapper._uiapeGuardTimer = setTimeout(() => {
-                eccWrapper._uiapeGuardTimer = null;
-                if (eccWrapper._uiapeRebuildGen !== genAtDetection) return;
-                rebuild();
-            }, 20);
+            // Immediate, as with the other guards. uiapeRebuildEccWrapperContent takeRecords()s
+            // its own mutations, so this doesn't retrigger itself
+            rebuild();
         });
         eccWrapper._uiapeEccGuard.observe(eccWrapper, { childList: true });
     }
@@ -8569,7 +8657,19 @@ uiapeOnDomReady(initMetricsMonitor);
 // Lets uiapeAfterConfigChange call this from outside the ENABLE_PLUGIN gate, which hides the function's own name
 uiapeInitRdsIconStylePanelFn = uiapeInitRdsIconStylePanel;
 
-if (!uiapeIsVisualEqActive(getUiapPanelConfig()) && (RDS_ICON_STYLE || LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN || RDS_ICON_STYLE_REMOVE_RDS_ICON || REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN) && innerWidth > 360) {
+// The PTY/ECC display modes are rendered by handleTextSocketMessage, which only runs once this
+// has started, so a non-default mode has to be listed here too or it never applies
+const uiapeInitCfg = getUiapPanelConfig();
+const uiapeIconSubsystemNeeded =
+  RDS_ICON_STYLE ||
+  LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN ||
+  RDS_ICON_STYLE_REMOVE_RDS_ICON ||
+  REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN ||
+  METRICS_MONITOR_PLUGIN_IS_INSTALLED ||
+  String(uiapeInitCfg.PTY_DISPLAY_MODE || "FULL").toUpperCase() !== "FULL" ||
+  String(uiapeInitCfg.ECC_DISPLAY_MODE || "FLAG").toUpperCase() !== "FLAG";
+
+if (!uiapeIsVisualEqActive(uiapeInitCfg) && uiapeIconSubsystemNeeded && innerWidth > 360) {
   uiapeInitRdsIconStylePanel();
 }
 

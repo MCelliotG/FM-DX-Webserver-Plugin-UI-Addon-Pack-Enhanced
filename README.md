@@ -15,6 +15,12 @@ A collection of visual enhancements for FM-DX Webserver. Features may be added/r
 
 ###### Includes code and assistance from Highpoint2000 & MCelliotG.
 
+v1.1.0
+------
+
+* Added new settings: `Show PTY as`, `Show ECC as`, `ECC active color`, `ECC country code glow`, `Horizontal icon spacing`, `Uniform horizontal spacing`, `Auto spacing minimum`, `Auto spacing maximum`, `PTY icon vertical offset`, `PTY icon spacing`
+* Minor fixes
+
 v1.0.6
 ------
 * Added `S-units` options
