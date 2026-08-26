@@ -4737,7 +4737,9 @@ document.head.insertBefore(styleElement, uiapeStyleAnchor);
       }
 
       circles.forEach(el => {
-        if (el.classList.contains('opacity-half') || el.closest('.opacity-half')) {
+        // opacity-half is unreliable on the clone
+        const stereoIsOff = !!el.closest('#stereoIcon')?.classList.contains('stereo-off');
+        if (stereoIsOff || el.classList.contains('opacity-half') || el.closest('.opacity-half')) {
           el.style.backgroundColor = 'inherit';
           el.style.boxShadow = 'none';
 
@@ -7535,12 +7537,22 @@ function handleTextSocketMessage(message) {
   // --- Stereo ---
   const stereoIcon = document.getElementById('stereoIcon');
   if (stereoIcon) {
+    const stereoWasOff = stereoIcon.classList.contains('stereo-off');
     if (message.st === true) {
       stereoIcon.classList.add('stereo-on');
       stereoIcon.classList.remove('stereo-off');
     } else {
       stereoIcon.classList.add('stereo-off');
       stereoIcon.classList.remove('stereo-on');
+    }
+    // The webserver's cached $dataSt never reaches this clone
+    stereoIcon.querySelectorAll('.circle-container').forEach(container => {
+      container.classList.toggle('opacity-half', message.st !== true);
+    });
+
+    // The glow observer doesn't watch this clone
+    if (stereoWasOff !== stereoIcon.classList.contains('stereo-off') && uiapeApplyStereoGlowFn) {
+      uiapeApplyStereoGlowFn();
     }
   }
 
