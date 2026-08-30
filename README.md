@@ -15,6 +15,12 @@ A collection of visual enhancements for FM-DX Webserver. Features may be added/r
 
 ###### Includes code and assistance from Highpoint2000 & MCelliotG.
 
+v1.2.0
+------
+* Added `Auto-fit RDS icon scale`, `Auto-fit padding`, `Auto-fit padding (Metrics Monitor)`, `PTY icon spacing`, `PTY icon vertical offset`, `Lower toast notifications`, `Smaller PS/RT text when narrow`
+* Added `Also search descriptions` search box option
+* Minor fixes
+
 v1.1.0
 ------
 

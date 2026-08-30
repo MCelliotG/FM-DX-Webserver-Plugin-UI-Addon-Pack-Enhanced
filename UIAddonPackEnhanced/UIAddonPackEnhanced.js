@@ -1,5 +1,5 @@
 /*
-    UI Add-on Pack Enhanced v1.1.0 by AAD
+    UI Add-on Pack Enhanced v1.2.0 by AAD
     -------------------------------------
     https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced
 */
@@ -8,12 +8,23 @@
 
 (async () => {
 
-// Whether the config panel search box also matches setting descriptions, not just titles.
+// Default for whether the config panel search box also matches setting descriptions, not just
+// titles. The checkbox beside the search box overrides it per user.
 const UIAPE_SEARCH_INCLUDE_DESCRIPTIONS = false;
+const UIAPE_SEARCH_DESC_KEY = "uiape_search_include_descriptions";
+
+function uiapeSearchIncludesDescriptions() {
+  try {
+    const stored = localStorage.getItem(UIAPE_SEARCH_DESC_KEY);
+    return stored === null ? UIAPE_SEARCH_INCLUDE_DESCRIPTIONS : stored === "true";
+  } catch (error) {
+    return UIAPE_SEARCH_INCLUDE_DESCRIPTIONS;
+  }
+}
 // Signal offset in dB
 const SIGNAL_OFFSET = 0.00;
 
-const pluginVersion = '1.1.0';
+const pluginVersion = '1.2.0';
 const pluginName = "UI Add-on Pack Enhanced";
 const pluginHomepageUrl = "https://github.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced";
 const pluginUpdateUrl = "https://raw.githubusercontent.com/AmateurAudioDude/FM-DX-Webserver-Plugin-UI-Addon-Pack-Enhanced/refs/heads/main/UIAddonPackEnhanced/UIAddonPackEnhanced.js";
@@ -211,12 +222,17 @@ const UIAPE_LIVE_CSS_KEYS = new Set([
   "PLUGINS_USER_ORDER",
   "PANEL_STYLE_EFFECT",
   "PANEL_STYLE_EFFECT_SIGNAL_PANEL",
+  "LOWER_TOAST_NOTIFICATIONS",
+  "REDUCE_TEXT_ON_NARROW_SCREENS",
   "RDS_ICON_STYLE_REMOVE_RDS_ICON",
   "PTY_ICON_OFFSET_Y",
   "PTY_ICON_GAP",
   "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
   "RDS_ICON_STYLE_MOBILE",
   "RDS_ICON_SCALE",
+  "RDS_ICON_SCALE_AUTO_FIT",
+  "RDS_ICON_SCALE_AUTO_FIT_PADDING",
+  "RDS_ICON_SCALE_AUTO_FIT_PADDING_MM",
   "LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN",
   "REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN",
   "APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS",
@@ -235,6 +251,7 @@ let uiapeTeardownRdsIconStylePanelFn = null;   // set inside the ENABLE_PLUGIN g
 let uiapeApplyStereoGlowFn = null;             // set inside the ENABLE_PLUGIN gate, so uiapeAfterConfigChange (declared outside it) can call it
 let uiapeReapplyIndicatorColorsFn = null;      // set inside the ENABLE_PLUGIN gate, so uiapeAfterConfigChange (declared outside it) can call it
 let uiapeRebuildEccWrapperContentFn = null;     // ECC renderer for live display/color/glow changes
+let uiapeApplyRdsIconAutoFitFn = null;          // set inside the ENABLE_PLUGIN gate, like the others above
 let uiapeNativeEccObserver = null;                  // watches the Webserver's native .data-flag lifecycle
 let uiapeReapplyMultipathIndicator = null;     // set inside the multipath indicator block, if it runs
 let uiapeMobileStatusBarConnectionFn = null;   // set inside the MOBILE_STATUS_BAR_CONNECTION block, so moveButtons() can call it
@@ -412,6 +429,8 @@ const UIAPE_DEFAULT_CONFIG = {
 
   PANEL_STYLE_EFFECT: 0,
   PANEL_STYLE_EFFECT_SIGNAL_PANEL: false,
+  LOWER_TOAST_NOTIFICATIONS: false,
+  REDUCE_TEXT_ON_NARROW_SCREENS: false,
 
   RDS_ICON_STYLE: false,
   RDS_ICON_STYLE_MOBILE: false,
@@ -431,6 +450,9 @@ const UIAPE_DEFAULT_CONFIG = {
 
   RDS_ICON_PRESET: 1,
   RDS_ICON_SCALE: 100,
+  RDS_ICON_SCALE_AUTO_FIT: true,
+  RDS_ICON_SCALE_AUTO_FIT_PADDING: 0,
+  RDS_ICON_SCALE_AUTO_FIT_PADDING_MM: -10,
   STEREO_ICON_WIDTH: 2,
   RDS_ICON_STYLE_MS_OFF_AS_LETTERS: false,
 
@@ -597,6 +619,7 @@ const UIAPE_DEFAULT_CONFIG = {
     "IS_TEF_RADIO",
     "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
     "ECC_FLAG_SPACING_METRICS_MONITOR",
+    "RDS_ICON_SCALE_AUTO_FIT_PADDING_MM",
     "IS_VISUALEQ_PLUGIN_ENABLED",
     "RDS_ICON_STYLE_REMOVE_RDS_ICON",
     "BANDWIDTH_UPDATE_INTERVAL",
@@ -952,6 +975,12 @@ const UIAPE_MESSAGE_DRIVEN_KEYS = new Set([
 
 // Live CSS keys apply instantly, other keys are tracked so we can warn a reload is needed
 function uiapeAfterConfigChange(key) {
+  if (key === "RDS_ICON_SCALE" || key === "RDS_ICON_SCALE_AUTO_FIT" ||
+      key === "RDS_ICON_SCALE_AUTO_FIT_PADDING" || key === "RDS_ICON_SCALE_AUTO_FIT_PADDING_MM") {
+    uiapeRefreshLiveCss();
+    uiapeApplyRdsIconAutoFitFn?.(document.getElementById("signal-icons"));
+    return;
+  }
   // These render via handleTextSocketMessage, so selecting one has no effect until it's running
   if (key === "PTY_DISPLAY_MODE" || key === "ECC_DISPLAY_MODE") {
     if (!uiapeRdsIconStylePanelReady && uiapeInitRdsIconStylePanelFn &&
@@ -1141,6 +1170,45 @@ function uiapeBuildLiveCss(cfg) {
   }
   input#commandinput:focus {
     box-shadow: 0 0 8px var(--color-4);
+  }
+  `;
+  }
+
+  if (cfg.LOWER_TOAST_NOTIFICATIONS) {
+    css += `
+  /* Move toast notifications down from the top */
+  @media only screen and (max-width: 1920px) {
+    #toast-container {
+      margin-top: 60px;
+    }
+  }
+  @media only screen and (max-width: 480px) {
+    #toast-container {
+      margin-top: 32px;
+    }
+  }
+  `;
+  }
+
+  if (cfg.REDUCE_TEXT_ON_NARROW_SCREENS) {
+    // Class is kept in sync with rotation
+    css += `
+  @media only screen and (min-width: 769px) and (max-width: 876px) {
+    html:not(.uiape-mobile-portrait) #data-ps {
+      font-size: 150%;
+    }
+  }
+
+  /* Radiotext resize */
+  @media only screen and (max-width: 1024px) {
+    html:not(.uiape-mobile-portrait) #rt-container {
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+    html:not(.uiape-mobile-portrait) #data-rt0,
+    html:not(.uiape-mobile-portrait) #data-rt1 {
+      font-size: 75%;
+    }
   }
   `;
   }
@@ -1465,7 +1533,9 @@ function uiapeBuildLiveCss(cfg) {
     }
 
     if (panelStyleBackground) {
+      // A media query rather than a width check, so resizing applies it without rebuilding the CSS
       css += `
+  @media (min-width: 769px) {
   ${panelStyleSelectors} {
     border-radius: 10px;
     background: ${panelStyleBackground};
@@ -1477,6 +1547,7 @@ function uiapeBuildLiveCss(cfg) {
   ${panelStyleHoverSelectors} {
     box-shadow: -1px -1px 1px var(--color-1-transparent),
                  1px 1px 1px var(--color-3-transparent);
+  }
   }
   `;
     }
@@ -2698,6 +2769,18 @@ function createUiapConfigLauncher() {
     if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
       document.documentElement.classList.add('uiape-touch-device');
     }
+
+    // Mobile portrait can't be told from a narrow desktop window by media query alone
+    if (!window.__uiapeMobilePortraitTracked) {
+      window.__uiapeMobilePortraitTracked = true;
+      const syncMobilePortrait = () => {
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        document.documentElement.classList.toggle('uiape-mobile-portrait', isMobile && window.innerHeight > window.innerWidth);
+      };
+      syncMobilePortrait();
+      window.addEventListener('resize', syncMobilePortrait);
+      window.addEventListener('orientationchange', syncMobilePortrait);
+    }
     if (!uiapeCanShowConfigPanel()) {
       document.getElementById("uiape-config-gear")?.remove();
       document.getElementById("uiape-config-panel")?.remove();
@@ -2915,6 +2998,25 @@ function createUiapConfigLauncher() {
         padding: 6px 9px;
         font-size: 12px;
         min-height: 32px;
+      }
+
+      .uiape-search-option {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        font-size: 11px;
+        opacity: 0.75;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .uiape-search-option input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        min-height: 0;
+        margin: 0;
+        accent-color: var(--color-main-bright, var(--color-4));
       }
 
       .uiape-config-body {
@@ -3477,6 +3579,7 @@ function createUiapConfigLauncher() {
           </div>
           <div class="uiape-config-search">
             <input type="text" id="uiape-config-search-input" placeholder="Search settings\u2026" aria-label="Search settings" autocomplete="off">
+            <label class="uiape-search-option"><input type="checkbox" id="uiape-config-search-descriptions"> Also search descriptions</label>
           </div>
           <div class="uiape-config-body">
             <div class="uiape-config-section">
@@ -3793,6 +3896,8 @@ function createUiapConfigLauncher() {
             ["PANEL_STYLE_EFFECT", "select", "Panel style effect", "Panel edge style preset.", [["0","Disabled"],["1","Style 1"],["2","Style 2"],["3","Style 3"]]],
             ["PANEL_STYLE_EFFECT_SIGNAL_PANEL", "checkbox", "Signal panel style", "Applies panel style effect to signal panel."],
             ["VOLUME_PERCENTAGE_TOAST", "checkbox", "Volume toast", "Displays toast when volume changes."],
+            ["LOWER_TOAST_NOTIFICATIONS", "checkbox", "Lower toast notifications", "Moves toast notifications further down from the top of the screen."],
+            ["REDUCE_TEXT_ON_NARROW_SCREENS", "checkbox", "Smaller PS/RT text when narrow", "Reduces PS and radiotext size on narrow screens."],
             ["RDS_FLAG_INDICATOR", "checkbox", "RDS flag indicator", "Shows A/B bullet next to radiotext."]
           ],
           rds: [
@@ -3820,6 +3925,9 @@ function createUiapConfigLauncher() {
             ["APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS", "checkbox", "Stereo glow without RDS", "Keeps stereo glow when RDS is missing."],
 
             ["RDS_ICON_SCALE", "number", "RDS icon scale", "Size in percentage."],
+            ["RDS_ICON_SCALE_AUTO_FIT", "checkbox", "Auto-fit RDS icon scale", "Shrinks the icon row below the set scale when it is too wide to fit."],
+            ["RDS_ICON_SCALE_AUTO_FIT_PADDING", "number", "Auto-fit padding", "Pixels kept clear at each end of the icon row. Negative allows it wider."],
+            ["RDS_ICON_SCALE_AUTO_FIT_PADDING_MM", "number", "Auto-fit padding (Metrics Monitor)", "Auto-fit padding used when Metrics Monitor owns the icon row."],
             ["RDS_ICON_STYLE_MS_OFF_AS_LETTERS", "checkbox", "MS off as letters", "Uses MS letters for dimmed Music/Speech icons."],
             ["RDS_INDICATOR_ICON_TYPE", "select", "RDS indicator type", "RDS indicator icon type.", [["1","Type 1"],["2","Type 2"]]],
             ["RDS_INDICATOR_ICON_COLOR", "color", "RDS icon color", "default, auto, or custom #RRGGBB."],
@@ -3869,7 +3977,9 @@ function createUiapConfigLauncher() {
         const UIAPE_NUMBER_WHEEL_STEP_OVERRIDES = {
           RDS_INDICATOR_ICON_GLOW_INTENSITY: 0.05,
           STEREO_ICON_SCALE: 0.5,
-          RDS_ICON_SCALE: 0.5
+          RDS_ICON_SCALE: 0.5,
+          RDS_ICON_SCALE_AUTO_FIT_PADDING: 0.5,
+          RDS_ICON_SCALE_AUTO_FIT_PADDING_MM: 0.5
         };
 
         function uiapeEscapeHtml(value) {
@@ -4277,7 +4387,7 @@ function createUiapConfigLauncher() {
             let sectionHasMatch = false;
             rows.forEach(rowEl => {
               const title = rowEl.querySelector(".uiape-config-label strong")?.textContent || "";
-              const desc = UIAPE_SEARCH_INCLUDE_DESCRIPTIONS ? (rowEl.querySelector(".uiape-config-label span")?.textContent || "") : "";
+              const desc = uiapeSearchIncludesDescriptions() ? (rowEl.querySelector(".uiape-config-label span")?.textContent || "") : "";
               const matches = title.toLowerCase().includes(query) || desc.toLowerCase().includes(query);
               rowEl.style.display = matches ? "" : "none";
               if (matches) sectionHasMatch = true;
@@ -4321,6 +4431,19 @@ function createUiapConfigLauncher() {
         uiapeRenderAllControlsFn = uiapeRenderAllControls;
 
         panel.querySelector("#uiape-config-search-input")?.addEventListener("input", uiapeApplySearchFilter);
+
+        const searchDescToggle = panel.querySelector("#uiape-config-search-descriptions");
+        if (searchDescToggle) {
+          searchDescToggle.checked = uiapeSearchIncludesDescriptions();
+          searchDescToggle.addEventListener("change", () => {
+            try {
+              localStorage.setItem(UIAPE_SEARCH_DESC_KEY, String(searchDescToggle.checked));
+            } catch (error) {
+              // Private mode or blocked storage, the choice just won't persist
+            }
+            uiapeApplySearchFilter();
+          });
+        }
 
         panel.addEventListener("change", (event) => {
           const field = event.target;
@@ -7534,6 +7657,12 @@ function handleTextSocketMessage(message) {
     uiapeBindNativeEccObserver(eccWrapper);
   }
 
+  // insertSignalPanel doesn't run when Metrics Monitor owns the row, so bind auto-fit here instead
+  {
+    const autoFitBar = document.getElementById('signal-icons');
+    if (autoFitBar && !autoFitBar._uiapeAutoFitResize) uiapeApplyRdsIconAutoFitFn?.(autoFitBar);
+  }
+
   // --- Stereo ---
   const stereoIcon = document.getElementById('stereoIcon');
   if (stereoIcon) {
@@ -8459,6 +8588,126 @@ function uiapeApplyHorizontalSpacing(row, preset, isFirstRow) {
 function uiapeDisposeSignalRowObservers(root = document.getElementById("signal-icons")) {
   if (!root) return;
   root.querySelectorAll('[data-uiape-icon-row="1"]').forEach(uiapeDisposeAutoSpacingObserver);
+  if (root._uiapeAutoFitResize) { root._uiapeAutoFitResize.disconnect(); root._uiapeAutoFitResize = null; }
+  if (root._uiapeAutoFitMutation) { root._uiapeAutoFitMutation.disconnect(); root._uiapeAutoFitMutation = null; }
+  root.style.removeProperty('transform');
+}
+
+// Keeps RDS_ICON_SCALE unless the row would clip, then shrinks only as far as needed.
+// Pixels kept clear at each end of the row. Metrics Monitor positions its bar differently,
+// so it gets its own value.
+// Horizontal nudge for Metrics Monitor's bar, negative moves left
+const UIAPE_AUTO_FIT_OFFSET_PX_MM = -3.5;
+
+function uiapeApplyRdsIconAutoFit(iconsBar) {
+  if (!iconsBar) return;
+  const cfg = getUiapPanelConfig();
+
+  // Metrics Monitor's bar is shrink-to-fit, so it needs measuring/placing whenever a scale is
+  // applied, not only for auto-fit. Enhanced's own row is width:100% and the CSS handles it.
+  const enhancedOwnsRow = !!iconsBar.querySelector('[data-uiape-icon-row="1"]');
+  if (!cfg.RDS_ICON_SCALE_AUTO_FIT && enhancedOwnsRow) {
+    // Observers keep firing otherwise, reapplying the transform right after it's removed
+    if (iconsBar._uiapeAutoFitResize) { iconsBar._uiapeAutoFitResize.disconnect(); iconsBar._uiapeAutoFitResize = null; }
+    if (iconsBar._uiapeAutoFitMutation) { iconsBar._uiapeAutoFitMutation.disconnect(); iconsBar._uiapeAutoFitMutation = null; }
+    iconsBar.style.removeProperty('transform');
+    iconsBar.style.removeProperty('transform-origin');
+    return;
+  }
+
+  const measure = () => {
+    if (!iconsBar.isConnected) return;
+    const rows = iconsBar.querySelectorAll('[data-uiape-icon-row="1"]');
+    const autoFit = !!getUiapPanelConfig().RDS_ICON_SCALE_AUTO_FIT;
+    if (!autoFit && rows.length) {
+      iconsBar.style.removeProperty('transform');
+      iconsBar.style.removeProperty('transform-origin');
+      return;
+    }
+
+    let available;
+    let needed = 0;
+    let mmPanel = null;
+    let mmContentLeft = 0;
+
+    if (rows.length) {
+      available = iconsBar.clientWidth;
+
+      // Rows are width:100%, so scrollWidth reports the row box whenever the icons fit. Measure the
+      // items instead, with the transform cleared so the reads aren't scaled by our own output.
+      const previousTransform = iconsBar.style.transform;
+      iconsBar.style.transform = 'none';
+      rows.forEach(row => {
+        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+        const gaps = Math.max(0, row.children.length - 1) * gap;
+        needed = Math.max(needed, uiapeMeasureDirectRowItems(row) + gaps);
+      });
+      iconsBar.style.transform = previousTransform;
+    } else {
+      // Metrics Monitor owns the bar. It's absolutely positioned, so it shrinks to its content,
+      // making its own width the amount needed and the panel the amount available.
+      mmPanel = iconsBar.closest('#signalPanel');
+      if (!mmPanel) return;
+      const panelStyle = getComputedStyle(mmPanel);
+      mmContentLeft = parseFloat(panelStyle.paddingLeft) || 0;
+      available = mmPanel.clientWidth
+        - mmContentLeft
+        - (parseFloat(panelStyle.paddingRight) || 0);
+      needed = iconsBar.offsetWidth;
+    }
+
+    if (!available || !needed) return;
+
+    const paddingCfg = getUiapPanelConfig();
+    const paddingRaw = rows.length ? paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING : paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING_MM;
+    const padding = Number.isFinite(Number(paddingRaw)) ? Number(paddingRaw) : 0;
+    const usable = available - (padding * 2);
+    if (usable <= 0) return;
+
+    // The ratio is the widest scale that still fits, not a multiplier for the configured one
+    const maxFit = usable / needed;
+    const configured = Number(uiapeCssScaleValue(getUiapPanelConfig().RDS_ICON_SCALE));
+    const scale = autoFit ? Math.min(configured, maxFit) : configured;
+
+    const scaleRounded = Number(scale.toFixed(4));
+    let offsetRounded = 0;
+    if (mmPanel) {
+      // A fixed pivot drifts one way when the width changes and the other when the scale does.
+      // Placing the scaled row explicitly keeps it put in both cases.
+      iconsBar.style.transformOrigin = 'left center';
+      const target = mmContentLeft + ((available - (needed * scale)) / 2) + UIAPE_AUTO_FIT_OFFSET_PX_MM;
+      offsetRounded = Number((target - iconsBar.offsetLeft).toFixed(2));
+    }
+
+    // Only skip when the transform would genuinely do nothing, since applying one puts the bar on
+    // its own layer and rounds some icons a pixel differently
+    if (scaleRounded === 1 && offsetRounded === 0) {
+      if (iconsBar.style.transform) {
+        iconsBar.style.removeProperty('transform');
+        iconsBar.style.removeProperty('transform-origin');
+      }
+      return;
+    }
+
+    const next = mmPanel
+      ? `translateX(${offsetRounded}px) scale(${scaleRounded})`
+      : `scale(${scaleRounded})`;
+    if (iconsBar.style.transform !== next) iconsBar.style.transform = next;
+  };
+
+  requestAnimationFrame(measure);
+
+  if (!iconsBar._uiapeAutoFitResize && typeof ResizeObserver !== "undefined") {
+    iconsBar._uiapeAutoFitResize = new ResizeObserver(() => requestAnimationFrame(measure));
+    iconsBar._uiapeAutoFitResize.observe(iconsBar);
+    if (iconsBar.parentElement) iconsBar._uiapeAutoFitResize.observe(iconsBar.parentElement);
+  }
+
+  // Icons appear and disappear without the row's own box changing, so ResizeObserver alone misses it
+  if (!iconsBar._uiapeAutoFitMutation) {
+    iconsBar._uiapeAutoFitMutation = new MutationObserver(() => requestAnimationFrame(measure));
+    iconsBar._uiapeAutoFitMutation.observe(iconsBar, { childList: true, subtree: true });
+  }
 }
 
 function createIconRow(iconList, isFirstRow, preset) {
@@ -8605,7 +8854,11 @@ function insertSignalPanel() {
     const secondRow = createIconRow(preset.SECOND_ROW, false, preset);
     iconsBar.appendChild(secondRow);
   }
+
+  uiapeApplyRdsIconAutoFit(iconsBar);
 }
+
+uiapeApplyRdsIconAutoFitFn = uiapeApplyRdsIconAutoFit;
 
 // Lets uiapeAfterConfigChange rebuild the panel on a preset change without a reload
 uiapeRebuildRdsIconPanel = insertSignalPanel;
