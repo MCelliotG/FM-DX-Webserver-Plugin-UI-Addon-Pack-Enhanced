@@ -46,6 +46,21 @@ const defaultConfig = {
     ENABLE_PLUGIN: true
 };
 
+const ICON_GLOW_KEYS = [
+    'LED_GLOW_EFFECT_STEREO_MPX', 'LED_GLOW_EFFECT_RDS', 'LED_GLOW_EFFECT_MS',
+    'LED_GLOW_EFFECT_TP_TA', 'LED_GLOW_EFFECT_PTY', 'LED_GLOW_EFFECT_ECC',
+    'LED_GLOW_EFFECT_BW', 'LED_GLOW_EFFECT_MULTIPATH'
+];
+const OLD_GLOW_MAP = {
+    LED_GLOW_EFFECT_ICONS: 'LED_GLOW_EFFECT_ALL_ICONS',
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY: 'LED_GLOW_EFFECT_PTY',
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS: 'LED_GLOW_EFFECT_MS',
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC: 'LED_GLOW_EFFECT_ECC',
+    LED_GLOW_EFFECT_ICONS_BANDWIDTH: 'LED_GLOW_EFFECT_BW',
+    LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN: 'LED_GLOW_EFFECT_STEREO_MPX',
+    LED_GLOW_EFFECT_MPX_ICON_METRICS_MONITOR_PLUGIN: 'LED_GLOW_EFFECT_STEREO_MPX'
+};
+
 let sharedConfig = { ...defaultConfig };
 
 function sanitizeConfig(config) {
@@ -53,10 +68,29 @@ function sanitizeConfig(config) {
         return { ...defaultConfig };
     }
 
+    const migrated = { ...config };
+    const oldValues = { ...migrated };
+    const oldAllGlow = oldValues.LED_GLOW_EFFECT_ICONS === true;
+    Object.entries(OLD_GLOW_MAP).forEach(([oldKey, newKey]) => {
+        if (migrated[newKey] === undefined && oldValues[oldKey] !== undefined) {
+            migrated[newKey] = oldValues[oldKey] === true;
+        }
+        delete migrated[oldKey];
+    });
+    if (oldAllGlow) ICON_GLOW_KEYS.forEach(key => { migrated[key] = true; });
+    migrated.LED_GLOW_EFFECT_ALL_ICONS = ICON_GLOW_KEYS.every(key => migrated[key] === true);
+
+    ['ADMIN_ONLY_KEYS', 'ADMIN_ONLY_KEYS_SEEN'].forEach(listKey => {
+        if (!Array.isArray(migrated[listKey])) return;
+        migrated[listKey] = Array.from(new Set(
+            migrated[listKey].map(key => OLD_GLOW_MAP[key] || key)
+        )).filter(key => key !== 'LED_GLOW_EFFECT_ALL_ICONS' && !ICON_GLOW_KEYS.includes(key));
+    });
+
     // Keep plain JSON-compatible values only.
     return JSON.parse(JSON.stringify({
         ...defaultConfig,
-        ...config
+        ...migrated
     }));
 }
 
@@ -133,7 +167,8 @@ function loadConfig(isReloaded) {
         sharedConfig = sanitizeConfig(parsed);
 
         // Ensure essential keys exist.
-        const needsUpdate = parsed.ENABLE_PLUGIN === undefined;
+        const needsUpdate = parsed.ENABLE_PLUGIN === undefined ||
+            Object.keys(OLD_GLOW_MAP).some(key => Object.prototype.hasOwnProperty.call(parsed, key));
         if (needsUpdate) {
             writeJsonFileAtomic(configFilePath, sharedConfig);
             logInfo(`[${pluginName}] Updated UIAddonPack.json with missing keys at ${configFilePath}`);

@@ -215,7 +215,15 @@ const UIAPE_LIVE_CSS_KEYS = new Set([
   "INCLUDE_SCANNER_BUTTONS",
   "LED_GLOW_EFFECT_LARGE",
   "LED_GLOW_EFFECT_SMALL",
-  "LED_GLOW_EFFECT_ICONS",
+  "LED_GLOW_EFFECT_ALL_ICONS",
+  "LED_GLOW_EFFECT_STEREO_MPX",
+  "LED_GLOW_EFFECT_RDS",
+  "LED_GLOW_EFFECT_MS",
+  "LED_GLOW_EFFECT_TP_TA",
+  "LED_GLOW_EFFECT_PTY",
+  "LED_GLOW_EFFECT_ECC",
+  "LED_GLOW_EFFECT_BW",
+  "LED_GLOW_EFFECT_MULTIPATH",
   "LED_GLOW_EFFECT_FREQ",
   "LED_GLOW_EFFECT_RDSPS",
   "SORT_PLUGIN_BUTTONS",
@@ -233,7 +241,6 @@ const UIAPE_LIVE_CSS_KEYS = new Set([
   "RDS_ICON_SCALE_AUTO_FIT",
   "RDS_ICON_SCALE_AUTO_FIT_PADDING",
   "RDS_ICON_SCALE_AUTO_FIT_PADDING_MM",
-  "LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN",
   "REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN",
   "APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS",
   "STEREO_ICON_SCALE",
@@ -241,6 +248,12 @@ const UIAPE_LIVE_CSS_KEYS = new Set([
   "RDS_INDICATOR_ICON_TYPE",
   "MULTIPATH_TEXT_SIZE"
 ]);
+
+const UIAPE_ICON_GLOW_KEYS = [
+  "LED_GLOW_EFFECT_STEREO_MPX", "LED_GLOW_EFFECT_RDS", "LED_GLOW_EFFECT_MS",
+  "LED_GLOW_EFFECT_TP_TA", "LED_GLOW_EFFECT_PTY", "LED_GLOW_EFFECT_ECC",
+  "LED_GLOW_EFFECT_BW", "LED_GLOW_EFFECT_MULTIPATH"
+];
 
 // Live-preview state. Populated during load and while the panel is used.
 let uiapeLiveStyleElement = null;              // dedicated <style> holding all live CSS
@@ -381,11 +394,11 @@ const UIAPE_DEFAULT_CONFIG = {
   MULTIPLE_USERS_NOTICE_MESSAGE_1: "This receiver is currently in use.",
   MULTIPLE_USERS_NOTICE_MESSAGE_2: "Please be considerate and mindful of other users before tuning.",
 
-  RDS_FLAG_INDICATOR: false,
+  RDS_FLAG_INDICATOR: "NONE",
 
   MULTIPATH_INDICATOR: false,
   MULTIPATH_ATTACH_TO: "STEREO",
-  MULTIPATH_LEFT_PADDING: -8,
+  MULTIPATH_LEFT_PADDING: 0,
   MULTIPATH_DISPLAY_MODE: "BOTH",
   MULTIPATH_TEXT_SIZE: 105,
   MULTIPATH_INDICATOR_COLOR: "",
@@ -415,7 +428,15 @@ const UIAPE_DEFAULT_CONFIG = {
   GRADIENT_BUTTONS: false,
   INCLUDE_SCANNER_BUTTONS: false,
 
-  LED_GLOW_EFFECT_ICONS: false,
+  LED_GLOW_EFFECT_ALL_ICONS: false,
+  LED_GLOW_EFFECT_STEREO_MPX: false,
+  LED_GLOW_EFFECT_RDS: false,
+  LED_GLOW_EFFECT_MS: false,
+  LED_GLOW_EFFECT_TP_TA: false,
+  LED_GLOW_EFFECT_PTY: false,
+  LED_GLOW_EFFECT_ECC: false,
+  LED_GLOW_EFFECT_BW: false,
+  LED_GLOW_EFFECT_MULTIPATH: false,
   LED_GLOW_EFFECT_LARGE: false,
   LED_GLOW_EFFECT_SMALL: false,
   LED_GLOW_EFFECT_RDSPS: false,
@@ -439,7 +460,6 @@ const UIAPE_DEFAULT_CONFIG = {
   PTY_ICON_GAP: 4,
   ECC_DISPLAY_MODE: "FLAG",
   ECC_INDICATOR_COLOR: "",
-  LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC: false,
   HORIZONTAL_ICON_SPACING_MODE: "PRESET",
   HORIZONTAL_ICON_SPACING_UNIFORM: 8,
   HORIZONTAL_ICON_SPACING_AUTO_MIN: 4,
@@ -477,11 +497,6 @@ const UIAPE_DEFAULT_CONFIG = {
   BW_INDICATOR_COLOR: "",
   BW_INDICATOR_COLOR_OFF: "",
 
-  LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY: false,
-  LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS: false,
-  LED_GLOW_EFFECT_ICONS_BANDWIDTH: false,
-  LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN: false,
-
   REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN: false,
   APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS: false,
 
@@ -496,18 +511,18 @@ const UIAPE_DEFAULT_CONFIG = {
       STEREO_ICON_SPACING: 1,
       ECC_ICON_SPACING: 0,
       ECC_FLAG_SPACING: 4,
-      PTY_HEIGHT: 20,
+      PTY_HEIGHT: 17,
       MS_HEIGHT_MODE: "PTY",
-      MS_HEIGHT: 20,
+      MS_HEIGHT: 17,
       TP_HEIGHT_MODE: "PTY",
-      TP_HEIGHT: 20,
+      TP_HEIGHT: 17,
       TA_HEIGHT_MODE: "PTY",
-      TA_HEIGHT: 20,
-      ECC_HEIGHT_MODE: "CUSTOM",
+      TA_HEIGHT: 17,
+      ECC_HEIGHT_MODE: "PTY",
       ECC_HEIGHT: 17,
-      BW_MARGIN_LEFT: -6,
-      GAP_ROW_1: 1,
-      GAP_ROW_2: 6
+      BW_MARGIN_LEFT: -5,
+      GAP_ROW_1: 0,
+      GAP_ROW_2: 0
     },
     1: {
       FIRST_ROW: ["PTY"],
@@ -519,18 +534,18 @@ const UIAPE_DEFAULT_CONFIG = {
       STEREO_ICON_SPACING: 1,
       ECC_ICON_SPACING: 0,
       ECC_FLAG_SPACING: 4,
-      PTY_HEIGHT: 20,
+      PTY_HEIGHT: 17,
       MS_HEIGHT_MODE: "PTY",
-      MS_HEIGHT: 20,
+      MS_HEIGHT: 17,
       TP_HEIGHT_MODE: "PTY",
-      TP_HEIGHT: 20,
+      TP_HEIGHT: 17,
       TA_HEIGHT_MODE: "PTY",
-      TA_HEIGHT: 20,
-      ECC_HEIGHT_MODE: "CUSTOM",
+      TA_HEIGHT: 17,
+      ECC_HEIGHT_MODE: "PTY",
       ECC_HEIGHT: 17,
-      BW_MARGIN_LEFT: -6,
-      GAP_ROW_1: 1,
-      GAP_ROW_2: 6
+      BW_MARGIN_LEFT: -5,
+      GAP_ROW_1: 0,
+      GAP_ROW_2: 0
     },
     2: {
       FIRST_ROW: ["STEREO", "RDS"],
@@ -549,10 +564,10 @@ const UIAPE_DEFAULT_CONFIG = {
       TP_HEIGHT: 17,
       TA_HEIGHT_MODE: "PTY",
       TA_HEIGHT: 17,
-      ECC_HEIGHT_MODE: "CUSTOM",
+      ECC_HEIGHT_MODE: "PTY",
       ECC_HEIGHT: 17,
-      BW_MARGIN_LEFT: -6,
-      GAP_ROW_1: -6,
+      BW_MARGIN_LEFT: -5,
+      GAP_ROW_1: 0,
       GAP_ROW_2: 0
     },
     3: {
@@ -565,18 +580,18 @@ const UIAPE_DEFAULT_CONFIG = {
       STEREO_ICON_SPACING: 1,
       ECC_ICON_SPACING: 0,
       ECC_FLAG_SPACING: 4,
-      PTY_HEIGHT: 20,
+      PTY_HEIGHT: 17,
       MS_HEIGHT_MODE: "PTY",
-      MS_HEIGHT: 20,
+      MS_HEIGHT: 17,
       TP_HEIGHT_MODE: "PTY",
-      TP_HEIGHT: 20,
+      TP_HEIGHT: 17,
       TA_HEIGHT_MODE: "PTY",
-      TA_HEIGHT: 20,
-      ECC_HEIGHT_MODE: "CUSTOM",
+      TA_HEIGHT: 17,
+      ECC_HEIGHT_MODE: "PTY",
       ECC_HEIGHT: 17,
-      BW_MARGIN_LEFT: -6,
-      GAP_ROW_1: 1,
-      GAP_ROW_2: 6
+      BW_MARGIN_LEFT: -5,
+      GAP_ROW_1: 0,
+      GAP_ROW_2: 0
     }
   },
 
@@ -623,7 +638,6 @@ const UIAPE_DEFAULT_CONFIG = {
     "IS_VISUALEQ_PLUGIN_ENABLED",
     "RDS_ICON_STYLE_REMOVE_RDS_ICON",
     "BANDWIDTH_UPDATE_INTERVAL",
-    "LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN",
     "REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN"
   ],
   // Tracks which admin-only defaults have already been decided, so a future default change won't override an explicit opt-out
@@ -654,18 +668,64 @@ function uiapeNormalizePluginMap(map, fallback = {}) {
 
 function uiapeNormalizeConfig(config) {
   const input = uiapeIsPlainObject(config) ? config : {};
+  const migratedInput = { ...input };
+  // RDS flag indicator used to be a checkbox. Preserve its meaning while
+  // expanding it to None / Bullets / A/B.
+  if (typeof migratedInput.RDS_FLAG_INDICATOR === "boolean") {
+    migratedInput.RDS_FLAG_INDICATOR = migratedInput.RDS_FLAG_INDICATOR ? "BULLETS" : "NONE";
+  } else if (migratedInput.RDS_FLAG_INDICATOR !== undefined) {
+    const rdsFlagMode = String(migratedInput.RDS_FLAG_INDICATOR).toUpperCase();
+    migratedInput.RDS_FLAG_INDICATOR = ["NONE", "BULLETS", "AB"].includes(rdsFlagMode)
+      ? rdsFlagMode
+      : "NONE";
+  }
+  const oldGlowMap = {
+    LED_GLOW_EFFECT_ICONS: "LED_GLOW_EFFECT_ALL_ICONS",
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY: "LED_GLOW_EFFECT_PTY",
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS: "LED_GLOW_EFFECT_MS",
+    LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC: "LED_GLOW_EFFECT_ECC",
+    LED_GLOW_EFFECT_ICONS_BANDWIDTH: "LED_GLOW_EFFECT_BW",
+    LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN: "LED_GLOW_EFFECT_STEREO_MPX",
+    LED_GLOW_EFFECT_MPX_ICON_METRICS_MONITOR_PLUGIN: "LED_GLOW_EFFECT_STEREO_MPX"
+  };
+  const oldAllGlow = migratedInput.LED_GLOW_EFFECT_ICONS === true;
+  const oldValues = { ...migratedInput };
+
+  Object.entries(oldGlowMap).forEach(([oldKey, newKey]) => {
+    if (migratedInput[newKey] === undefined && oldValues[oldKey] !== undefined) {
+      migratedInput[newKey] = oldValues[oldKey] === true;
+    }
+    delete migratedInput[oldKey];
+  });
+
+  if (oldAllGlow) {
+    UIAPE_ICON_GLOW_KEYS.forEach(key => { migratedInput[key] = true; });
+  } else {
+    ["LED_GLOW_EFFECT_RDS", "LED_GLOW_EFFECT_TP_TA", "LED_GLOW_EFFECT_MULTIPATH"].forEach(key => {
+      if (migratedInput[key] === undefined) migratedInput[key] = false;
+    });
+  }
+  migratedInput.LED_GLOW_EFFECT_ALL_ICONS = UIAPE_ICON_GLOW_KEYS.every(key => migratedInput[key] === true);
+
+  ["ADMIN_ONLY_KEYS", "ADMIN_ONLY_KEYS_SEEN"].forEach(listKey => {
+    if (!Array.isArray(migratedInput[listKey])) return;
+    migratedInput[listKey] = Array.from(new Set(
+      migratedInput[listKey].map(key => oldGlowMap[key] || key)
+    )).filter(key => key !== "LED_GLOW_EFFECT_ALL_ICONS" && !UIAPE_ICON_GLOW_KEYS.includes(key));
+  });
+
   const merged = {
     ...UIAPE_DEFAULT_CONFIG,
-    ...input
+    ...migratedInput
   };
 
-  merged.RDS_ICON_STYLE_PRESETS = uiapeMergeRdsPresets(input.RDS_ICON_STYLE_PRESETS || merged.RDS_ICON_STYLE_PRESETS);
-  merged.PLUGIN_BUTTON_DEFAULT_LABELS = uiapeNormalizePluginMap(input.PLUGIN_BUTTON_DEFAULT_LABELS, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_DEFAULT_LABELS);
-  merged.PLUGIN_BUTTON_DEFAULT_MAP = uiapeNormalizePluginMap(input.PLUGIN_BUTTON_DEFAULT_MAP, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_DEFAULT_MAP);
-  merged.PLUGIN_BUTTON_CUSTOM_LABELS = uiapeNormalizePluginMap(input.PLUGIN_BUTTON_CUSTOM_LABELS, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_CUSTOM_LABELS);
-  merged.PLUGIN_BUTTON_CUSTOM_MAP = uiapeNormalizePluginMap(input.PLUGIN_BUTTON_CUSTOM_MAP, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_CUSTOM_MAP);
+  merged.RDS_ICON_STYLE_PRESETS = uiapeMergeRdsPresets(migratedInput.RDS_ICON_STYLE_PRESETS || merged.RDS_ICON_STYLE_PRESETS);
+  merged.PLUGIN_BUTTON_DEFAULT_LABELS = uiapeNormalizePluginMap(migratedInput.PLUGIN_BUTTON_DEFAULT_LABELS, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_DEFAULT_LABELS);
+  merged.PLUGIN_BUTTON_DEFAULT_MAP = uiapeNormalizePluginMap(migratedInput.PLUGIN_BUTTON_DEFAULT_MAP, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_DEFAULT_MAP);
+  merged.PLUGIN_BUTTON_CUSTOM_LABELS = uiapeNormalizePluginMap(migratedInput.PLUGIN_BUTTON_CUSTOM_LABELS, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_CUSTOM_LABELS);
+  merged.PLUGIN_BUTTON_CUSTOM_MAP = uiapeNormalizePluginMap(migratedInput.PLUGIN_BUTTON_CUSTOM_MAP, UIAPE_DEFAULT_CONFIG.PLUGIN_BUTTON_CUSTOM_MAP);
 
-  const reconciledAdminOnly = uiapeReconcileAdminOnlyKeys(input.ADMIN_ONLY_KEYS, input.ADMIN_ONLY_KEYS_SEEN);
+  const reconciledAdminOnly = uiapeReconcileAdminOnlyKeys(migratedInput.ADMIN_ONLY_KEYS, migratedInput.ADMIN_ONLY_KEYS_SEEN);
   merged.ADMIN_ONLY_KEYS = reconciledAdminOnly.keys;
   merged.ADMIN_ONLY_KEYS_SEEN = reconciledAdminOnly.seen;
 
@@ -801,6 +861,16 @@ function getUiapConfig() {
 }
 
 let UIAPE_CONFIG = getUiapConfig();
+
+// MetricsMonitor detection synchronises its compatibility mode immediately.
+// VisualEQ detection is intentionally not written into UIAPE_CONFIG: its live
+// safety guard is independent, so a user-saved unchecked switch stays unchecked.
+if (uiapeIsMetricsMonitorActive()) {
+  UIAPE_CONFIG = uiapeNormalizeConfig({
+    ...UIAPE_CONFIG,
+    METRICS_MONITOR_PLUGIN_IS_INSTALLED: true
+  });
+}
 let UIAPE_CONFIG_DIRTY = false;
 
 function getUiapPanelConfig() {
@@ -811,11 +881,36 @@ function getUiapPanelConfig() {
 // localStorage key here always reflects whether it will actually take over the flags panel on
 // this page load, not just whether the admin has it installed.
 function uiapeIsVisualEqActive(cfg) {
-  if (!cfg.IS_VISUALEQ_PLUGIN_ENABLED) return false;
+  // Actual active-plugin detection is authoritative. The config flag is kept
+  // for persistence/UI state, but must never leave both DOM owners running.
+  return uiapeIsVisualEqDetectedActive();
+}
+
+function uiapeIsVisualEqDetectedActive() {
   try {
     if (localStorage.getItem('visualeq_enabled_state') === 'false') return false;
   } catch (error) {}
-  return true;
+  if (document.querySelector('.panel-eq-container')) return true;
+  const visualEqToggle = document.getElementById('visualeq-enable-toggle');
+  // VisualEQ labels this control "Hide VisualEQ": checked means installed but inactive.
+  if (visualEqToggle) return !visualEqToggle.checked;
+  // VisualEQ only owns the desktop flags panel. A script tag alone must not suppress
+  // UIAPE's mobile panel, where VisualEQ deliberately does not start.
+  return window.innerWidth >= 769 && Array.from(document.scripts || []).some(script =>
+    /(?:^|\/)visualeq(?:[-_.\/]|$)/i.test(String(script.src || ""))
+  );
+}
+
+// Detects the running MetricsMonitor independently of the saved compatibility
+// switch. The DOM/API checks cover its completed startup; the script check also
+// covers the short interval while its modules are still being initialised.
+function uiapeIsMetricsMonitorActive() {
+  if (window.MetricsHeader && typeof window.MetricsHeader.initHeader === "function") return true;
+  if (window.MetricsMpxHub) return true;
+  if (document.querySelector('#signalPanel #level-meter-container, #signalPanel [id^="mm-"]')) return true;
+  return Array.from(document.scripts || []).some(script =>
+    /(?:^|\/)metricsmonitor(?:[-_.\/]|$)/i.test(String(script.src || ""))
+  );
 }
 
 function markUiapConfigDirty() {
@@ -839,6 +934,12 @@ function markUiapConfigClean(message = "Saved") {
 async function saveUiapConfig() {
   const targetProfile = uiapeDetectAdminSession() ? "admin" : "user";
   const normalizedConfig = uiapeNormalizeConfig(getUiapPanelConfig());
+  const previousSavedConfig = UIAPE_SAVED_BASELINE || UIAPE_DEFAULT_CONFIG;
+  const forceReloadAfterEnable = [
+    "RDS_ICON_STYLE",
+    "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
+    "IS_VISUALEQ_PLUGIN_ENABLED"
+  ].some(key => normalizedConfig[key] === true && previousSavedConfig[key] !== true);
 
   if (targetProfile === "admin") {
     const result = await uiapeSaveServerConfig(normalizedConfig);
@@ -865,6 +966,14 @@ async function saveUiapConfig() {
   markUiapConfigClean("Saved");
 
   if (uiapeRenderAllControlsFn) uiapeRenderAllControlsFn();
+
+  // These integrations rebuild or take ownership of the same header DOM. Once an
+  // enable action has been saved, always begin them on a clean page lifecycle so
+  // temporary vertical layouts, stale nodes and overlapping icons cannot survive.
+  if (forceReloadAfterEnable) {
+    location.reload();
+    return;
+  }
 
   if (needsReload) {
     const reloadCfg = getUiapPanelConfig();
@@ -961,15 +1070,15 @@ const UIAPE_MESSAGE_DRIVEN_KEYS = new Set([
   "RDS_INDICATOR_ICON_GLOW_INTENSITY",
   "TP_INDICATOR_ICON_COLOR", "TP_INDICATOR_ICON_COLOR_OFF",
   "TA_INDICATOR_ICON_COLOR", "TA_INDICATOR_ICON_COLOR_OFF",
-  "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY",
-  "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS",
+  "LED_GLOW_EFFECT_PTY",
+  "LED_GLOW_EFFECT_MS",
   "RDS_ICON_STYLE_MS_OFF_AS_LETTERS",
   "BANDWIDTH_UPDATE_INTERVAL",
-  "LED_GLOW_EFFECT_ICONS_BANDWIDTH",
+  "LED_GLOW_EFFECT_BW",
   "BW_INDICATOR_COLOR", "BW_INDICATOR_COLOR_OFF",
   "PTY_DISPLAY_MODE",
   "ECC_DISPLAY_MODE", "ECC_INDICATOR_COLOR",
-  "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC",
+  "LED_GLOW_EFFECT_ECC",
   "RDS_FLAG_INDICATOR"
 ]);
 
@@ -983,12 +1092,17 @@ function uiapeAfterConfigChange(key) {
   }
   // These render via handleTextSocketMessage, so selecting one has no effect until it's running
   if (key === "PTY_DISPLAY_MODE" || key === "ECC_DISPLAY_MODE") {
-    if (!uiapeRdsIconStylePanelReady && uiapeInitRdsIconStylePanelFn &&
-        !uiapeIsVisualEqActive(getUiapPanelConfig()) && window.innerWidth > 360) {
+    if (!uiapeRdsIconStylePanelReady && uiapeInitRdsIconStylePanelFn && window.innerWidth > 360) {
       uiapeInitRdsIconStylePanelFn();
     }
   }
   if (UIAPE_LIVE_CSS_KEYS.has(key)) {
+    if (UIAPE_ICON_GLOW_KEYS.includes(key) && uiapeReapplyIndicatorColorsFn) {
+      uiapeReapplyIndicatorColorsFn();
+    }
+    if (key === "LED_GLOW_EFFECT_MULTIPATH" && uiapeReapplyMultipathIndicator) {
+      uiapeReapplyMultipathIndicator();
+    }
     uiapeRefreshLiveCss();
     return;
   }
@@ -1031,7 +1145,7 @@ function uiapeAfterConfigChange(key) {
     key === "ECC_INDICATOR_COLOR_OFF" ||
     key === "ECC_DISPLAY_MODE" ||
     key === "ECC_INDICATOR_COLOR" ||
-    key === "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC"
+    key === "LED_GLOW_EFFECT_ECC"
   ) {
     const eccWrapper = document.getElementById("eccWrapper");
     if (eccWrapper?._uiapeEccState && uiapeRebuildEccWrapperContentFn) {
@@ -1050,7 +1164,7 @@ function uiapeAfterConfigChange(key) {
     if (cfg.RDS_ICON_STYLE) {
       if (uiapeRdsIconStylePanelReady) {
         if (uiapeRebuildRdsIconPanel) uiapeRebuildRdsIconPanel();
-      } else if (!uiapeIsVisualEqActive(cfg) && window.innerWidth > 360) {
+      } else if (window.innerWidth > 360) {
         if (uiapeInitRdsIconStylePanelFn) uiapeInitRdsIconStylePanelFn();
       }
     } else if (uiapeRdsIconStylePanelReady && uiapeTeardownRdsIconStylePanelFn) {
@@ -1082,9 +1196,12 @@ function uiapeAfterConfigChange(key) {
     key === "TP_INDICATOR_ICON_COLOR" || key === "TP_INDICATOR_ICON_COLOR_OFF" ||
     key === "TA_INDICATOR_ICON_COLOR" || key === "TA_INDICATOR_ICON_COLOR_OFF" ||
     key === "BW_INDICATOR_COLOR" || key === "BW_INDICATOR_COLOR_OFF" ||
-    key === "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY" ||
-    key === "LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS" ||
-    key === "LED_GLOW_EFFECT_ICONS_BANDWIDTH"
+    key === "LED_GLOW_EFFECT_PTY" ||
+    key === "LED_GLOW_EFFECT_MS" ||
+    key === "LED_GLOW_EFFECT_BW" ||
+    key === "LED_GLOW_EFFECT_STEREO_MPX" ||
+    key === "LED_GLOW_EFFECT_RDS" ||
+    key === "LED_GLOW_EFFECT_TP_TA"
   ) {
     // Reapply now using each icon's last known state, rather than waiting for the next message
     if (uiapeReapplyIndicatorColorsFn) uiapeReapplyIndicatorColorsFn();
@@ -1357,7 +1474,8 @@ function uiapeBuildLiveCss(cfg) {
   `;
   }
 
-  const anyGlow = cfg.LED_GLOW_EFFECT_LARGE || cfg.LED_GLOW_EFFECT_SMALL || cfg.LED_GLOW_EFFECT_ICONS || cfg.LED_GLOW_EFFECT_FREQ || cfg.LED_GLOW_EFFECT_RDSPS;
+  const anyIconGlow = UIAPE_ICON_GLOW_KEYS.some(key => cfg[key] === true);
+  const anyGlow = cfg.LED_GLOW_EFFECT_LARGE || cfg.LED_GLOW_EFFECT_SMALL || anyIconGlow || cfg.LED_GLOW_EFFECT_FREQ || cfg.LED_GLOW_EFFECT_RDSPS;
 
   if (anyGlow) {
     css += `
@@ -1382,7 +1500,7 @@ function uiapeBuildLiveCss(cfg) {
   `;
   }
 
-  if (cfg.LED_GLOW_EFFECT_ICONS) {
+  if (cfg.LED_GLOW_EFFECT_ALL_ICONS) {
     css += `
     .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .opacity-full,
   `;
@@ -1413,7 +1531,7 @@ function uiapeBuildLiveCss(cfg) {
   `;
   }
 
-  if (cfg.LED_GLOW_EFFECT_ICONS) {
+  if (cfg.LED_GLOW_EFFECT_TP_TA) {
     css += `
     .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .opacity-half {
       color: inherit;
@@ -1421,7 +1539,19 @@ function uiapeBuildLiveCss(cfg) {
     }
 
     .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .data-tp:not(:has(.opacity-half)),
-    .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .data-ta:not(:has(.opacity-half)),
+    .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .data-ta:not(:has(.opacity-half)) {
+      color: var(--text-color-default);
+      text-shadow:
+        0 0 5px rgba(255, 255, 255, var(--glow-alpha-1)),
+        0 0 10px rgba(255, 255, 255, var(--glow-alpha-2)),
+        0 0 20px rgba(238, 238, 238, var(--glow-alpha-3)),
+        0 0 30px rgba(204, 204, 204, var(--glow-alpha-4));
+    }
+  `;
+  }
+
+  if (cfg.LED_GLOW_EFFECT_MS) {
+    css += `
     .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 span.data-ms:not(:has(.opacity-half)) {
       color: var(--text-color-default);
       text-shadow:
@@ -1430,7 +1560,11 @@ function uiapeBuildLiveCss(cfg) {
         0 0 20px rgba(238, 238, 238, var(--glow-alpha-3)),
         0 0 30px rgba(204, 204, 204, var(--glow-alpha-4));
     }
+  `;
+  }
 
+  if (cfg.LED_GLOW_EFFECT_STEREO_MPX) {
+    css += `
     .wrapper-outer #wrapper #flags-container-desktop.panel-33.user-select-none h3 .circle-container .circle,
     .wrapper-outer #wrapper .user-select-none .circle-container .circle:where(:not(#signalPanel *)) {
       background-color: rgba(255, 255, 255, var(--glow-alpha-3));
@@ -1553,10 +1687,11 @@ function uiapeBuildLiveCss(cfg) {
     }
   }
 
-  // RDS icon scale located here to decouple from "Metrics icon glow" for Metrics Monitor.
-  if (!uiapeIsVisualEqActive(cfg) && window.innerWidth > 360 && parseFloat(cfg.RDS_ICON_SCALE) !== 100) {
+  // RDS scale belongs to the RDS WebP only. Complete-row shrinking is handled
+  // separately by auto-fit and must never scale the meters/canvas.
+  if (cfg.RDS_ICON_STYLE && window.innerWidth > 360 && parseFloat(cfg.RDS_ICON_SCALE) !== 100) {
     css += `
-#signalPanel > *:where(:not(#uiape-config-gear, #uiape-config-panel)) {
+:is(#signal-icons, .uiape-visualeq-row-host) #rdsIcon {
     transform: scale(${uiapeCssScaleValue(cfg.RDS_ICON_SCALE)});
     transform-origin: center;
 }
@@ -1565,27 +1700,26 @@ function uiapeBuildLiveCss(cfg) {
 
   // Live overrides for RDS icon settings, only apply if the master feature was already on at page load
   if (
-    !uiapeIsVisualEqActive(cfg) &&
-    (cfg.RDS_ICON_STYLE || cfg.LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN || cfg.RDS_ICON_STYLE_REMOVE_RDS_ICON) &&
+    (cfg.RDS_ICON_STYLE || cfg.LED_GLOW_EFFECT_STEREO_MPX || cfg.RDS_ICON_STYLE_REMOVE_RDS_ICON) &&
     window.innerWidth > 360
   ) {
     const rdsPreset = uiapeGetActiveRdsPreset(cfg);
     const stereoCssScale = uiapeCssScaleValue(cfg.STEREO_ICON_SCALE, 1);
-    const rdsGlowEnabled = !uiapeIsVisualEqActive(cfg) && (cfg.LED_GLOW_EFFECT_ICONS && (cfg.RDS_ICON_STYLE || cfg.LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN));
-    const multipathGlowRgb = uiapeHexToRgb(resolveIconColor(cfg.MULTIPATH_INDICATOR_COLOR, "") || "#FFFFFF");
+    const rdsGlowEnabled = cfg.LED_GLOW_EFFECT_RDS;
+    const stereoGlowEnabled = cfg.LED_GLOW_EFFECT_STEREO_MPX;
     const stereoGlowRgb = uiapeHexToRgb(resolveIconColor(cfg.STEREO_ICON_COLOR === "default" ? "" : cfg.STEREO_ICON_COLOR, "") || "#FFFFFF");
 
     css += `
 ${cfg.RDS_ICON_STYLE_REMOVE_RDS_ICON === true ? `
-#rdsIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #rdsIcon {
   display: none !important;
 }
 
-.multipath-container {
+:is(#signal-icons, .uiape-visualeq-row-host) .multipath-container {
   margin-left: ${cfg.MULTIPATH_LEFT_PADDING}px !important;
 }
 
-#eccWrapper {
+:is(#signal-icons, .uiape-visualeq-row-host) #eccWrapper {
   margin-left: 24px !important;
 }
 ` : ""}
@@ -1623,40 +1757,34 @@ ${cfg.METRICS_MONITOR_PLUGIN_IS_INSTALLED === false ? `
 
 ${rdsGlowEnabled ? `
 /* Glow effect for RDS_ICON_STYLE */
-${cfg.REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN && cfg.APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS ? '#stereoIcon[src*="stereo_on"],' : ''}
-#signal-icons img.status-icon.icon-glow-on {
+${cfg.REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN && cfg.APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS ? ':is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon[src*="stereo_on"],' : ''}
+:is(#signal-icons, .uiape-visualeq-row-host) img.status-icon.icon-glow-on {
   filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6))
           drop-shadow(0 0 6px rgba(255, 255, 255, 0.4))
           drop-shadow(0 0 9px rgba(238, 238, 238, 0.3));
 }
 
-/* Multipath icon glow effect */
-#signal-icons .multipath-container.opacity-full .fa-mountain-sun {
-  filter: drop-shadow(0 0 3px rgba(${multipathGlowRgb.r}, ${multipathGlowRgb.g}, ${multipathGlowRgb.b}, 0.6))
-          drop-shadow(0 0 6px rgba(${multipathGlowRgb.r}, ${multipathGlowRgb.g}, ${multipathGlowRgb.b}, 0.4))
-          drop-shadow(0 0 9px rgba(${multipathGlowRgb.r}, ${multipathGlowRgb.g}, ${multipathGlowRgb.b}, 0.3));
-}
 ` : ''}
 
 ${cfg.RDS_ICON_STYLE ? `
-#signal-icons #stereoIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon {
   transform: translateY(-1px) scale(${stereoCssScale});
 }
 
-#signal-icons #stereoIcon.stereo-on .circle-container .circle {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-on .circle-container .circle {
   border: ${cfg.STEREO_ICON_WIDTH}px solid;
   border-color: var(--uiape-stereo-icon-color);
 }
 
-#signal-icons #stereoIcon.stereo-off .circle-container .circle {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-off .circle-container .circle {
   border: ${cfg.STEREO_ICON_WIDTH}px solid;
   border-color: var(--uiape-stereo-icon-color-off);
 }
 ` : ''}
 
-${rdsGlowEnabled ? `
+${stereoGlowEnabled ? `
 /* Stereo icon glow effect for RDS_ICON_STYLE */
-#signal-icons #stereoIcon.stereo-on .circle-container .circle {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-on .circle-container .circle {
   background-color: rgba(${stereoGlowRgb.r}, ${stereoGlowRgb.g}, ${stereoGlowRgb.b}, 0.2);
   box-shadow:
     0 0 6px rgba(${stereoGlowRgb.r}, ${stereoGlowRgb.g}, ${stereoGlowRgb.b}, 0.4),
@@ -1665,7 +1793,7 @@ ${rdsGlowEnabled ? `
     0 0 24px rgba(${stereoGlowRgb.r}, ${stereoGlowRgb.g}, ${stereoGlowRgb.b}, 0.1);
 }
 
-#signal-icons #stereoIcon.stereo-on .circle-container .circle::after {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-on .circle-container .circle::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1679,26 +1807,26 @@ ${rdsGlowEnabled ? `
 ` : ''}
 
 ${cfg.RDS_ICON_STYLE ? `
-#signal-icons #stereoIcon.stereo-off .circle-container .circle,
-#signal-icons #stereoIcon.stereo-off .circle-container {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-off .circle-container .circle,
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-off .circle-container {
   ${cfg.REDUCE_HALF_OPACITY === true ? "opacity: 0.9;" : ""}
 }
 
-#tpIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #tpIcon {
   height: ${uiapeResolveLiveRdsIconHeight(rdsPreset, "TP", rdsPreset.PTY_HEIGHT)}px !important;
 }
 
-#taIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #taIcon {
   height: ${uiapeResolveLiveRdsIconHeight(rdsPreset, "TA", rdsPreset.PTY_HEIGHT)}px !important;
 }
 
-#ptyIconOverlay {
+:is(#signal-icons, .uiape-visualeq-row-host) #ptyIconOverlay {
   height: ${uiapeResolveLiveRdsIconHeight(rdsPreset, "MS", rdsPreset.PTY_HEIGHT)}px !important;
 }
 
 /* PTY Label (Enhanced-owned row only, Metrics Monitor styles its own #ptyLabel) */
-#ptyLabel {
-  font-size: 13px;
+:is(#signal-icons, .uiape-visualeq-row-host) #ptyLabel {
+  font-size: inherit;
   color: #fff;
   text-align: center;
   min-width: 96px;
@@ -1711,7 +1839,7 @@ ${cfg.RDS_ICON_STYLE ? `
   flex-shrink: 0;
 }
 
-#rdsIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #rdsIcon {
   height: ${cfg.RDS_INDICATOR_ICON_TYPE === 1 ? 14 : 18}px !important;
   width: auto !important;
 }
@@ -1721,8 +1849,7 @@ ${cfg.RDS_ICON_STYLE ? `
 
 /* Multipath text mode sizing */
   css += `
-#signal-icons .multipath-rfmp-text,
-.multipath-container .multipath-rfmp-text {
+:is(#signal-icons, .uiape-visualeq-row-host) .multipath-rfmp-text {
   display: inline-flex;
   flex-direction: column;
   gap: 1px;
@@ -2129,7 +2256,7 @@ const INCREASE_FREQUENCY_FONT_WEIGHT = UIAPE_CONFIG.INCREASE_FREQUENCY_FONT_WEIG
 const GRADIENT_BUTTONS = UIAPE_CONFIG.GRADIENT_BUTTONS;
 const INCLUDE_SCANNER_BUTTONS = UIAPE_CONFIG.INCLUDE_SCANNER_BUTTONS;
 // Adds a glowing effect.
-const LED_GLOW_EFFECT_ICONS = UIAPE_CONFIG.LED_GLOW_EFFECT_ICONS; // Enables glow effect for RDS icons, such as the Stereo/Mono icon.
+const LED_GLOW_EFFECT_ALL_ICONS = UIAPE_CONFIG.LED_GLOW_EFFECT_ALL_ICONS;
 const LED_GLOW_EFFECT_LARGE = UIAPE_CONFIG.LED_GLOW_EFFECT_LARGE; // Enables glow effect for large text/digits, which might annoy users.
 const LED_GLOW_EFFECT_SMALL = UIAPE_CONFIG.LED_GLOW_EFFECT_SMALL; // Enables glow effect for small text/digits, which might annoy users.
 const LED_GLOW_EFFECT_RDSPS = UIAPE_CONFIG.LED_GLOW_EFFECT_RDSPS; // Enables glow effect for RDS PS text, which might annoy users.
@@ -2499,9 +2626,10 @@ function uiapeCreateEccCountryCodeElement(countryCode, countryName, heightPx, ac
   code.style.minWidth = '31px';
   code.style.border = '1px solid currentColor';
   code.style.borderRadius = '3px';
-  code.style.fontSize = '12px';
+  code.style.fontSize = `${uiapeLabelFontSizeFromHeight(heightPx)}px`;
   code.style.fontWeight = '700';
   code.style.lineHeight = '1';
+  uiapeCenterFramedTextLabel(code);
 
   // Match applyTextIndicatorColor(): default uses white, auto resolves
   // to the theme accent, and custom uses the selected hex colour.
@@ -2546,13 +2674,25 @@ function uiapeAppendActiveEccContent(eccWrapper, eccPreset, liveCfg, mmInstalled
       ? ""
       : resolveIconColor(eccColorSetting, "");
 
-  const eccCcGlowEnabled = !!liveCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC;
+  const eccCcGlowEnabled = !!liveCfg.LED_GLOW_EFFECT_ECC;
   const eccFlagLeftInset =
     (Number(eccPreset.ECC_FLAG_SPACING) || 0) +
     (mmInstalled ? Number(liveCfg.ECC_FLAG_SPACING_METRICS_MONITOR) || 0 : 0);
 
   const appendFlag = () => {
     const flagClone = info.source.cloneNode(true);
+    const sourceFlagIcon = info.source.querySelector('i[class*="flag-sm-"]');
+    const clonedFlagIcon = flagClone.querySelector('i[class*="flag-sm-"]');
+    const sourceFlagRect = sourceFlagIcon?.getBoundingClientRect();
+    const sourceFlagStyle = sourceFlagIcon ? getComputedStyle(sourceFlagIcon) : null;
+    const sourceFlagWidth = sourceFlagRect?.width > 0
+      ? sourceFlagRect.width
+      : (parseFloat(sourceFlagStyle?.width) || 16);
+    const sourceFlagHeight = sourceFlagRect?.height > 0
+      ? sourceFlagRect.height
+      : (parseFloat(sourceFlagStyle?.height) || parseFloat(sourceFlagStyle?.fontSize) || 12);
+    const flagScale = eccHeight / sourceFlagHeight;
+    const scaledFlagWidth = sourceFlagWidth * flagScale;
     flagClone.style.marginLeft = eccFlagLeftInset + 'px';
     flagClone.style.marginRight = displayMode === 'FLAG'
       ? (UIAPE_ECC_FLAG_RESERVED_WIDTH - eccFlagLeftInset) + 'px'
@@ -2561,8 +2701,24 @@ function uiapeAppendActiveEccContent(eccWrapper, eccPreset, liveCfg, mmInstalled
     flagClone.style.transform = 'translateY(0)';
     flagClone.style.display = 'inline-flex';
     flagClone.style.alignItems = 'center';
-    flagClone.style.height = '17px';
-    flagClone.style.lineHeight = '17px';
+    flagClone.style.justifyContent = 'center';
+    flagClone.style.position = 'relative';
+    flagClone.style.width = `${Number(scaledFlagWidth.toFixed(2))}px`;
+    flagClone.style.height = `${eccHeight}px`;
+    flagClone.style.lineHeight = `${eccHeight}px`;
+    // Clip the native flag sprite to the same 3px corner geometry used by
+    // the framed ECC country-code label, in standalone, Metrics and VisualEQ.
+    flagClone.style.borderRadius = '3px';
+    flagClone.style.overflow = 'hidden';
+    if (clonedFlagIcon) {
+      // Scale the already-painted native flag as one unit. Flag classes use a
+      // sprite/background; changing background-size corrupts that sprite.
+      clonedFlagIcon.style.position = 'absolute';
+      clonedFlagIcon.style.left = '50%';
+      clonedFlagIcon.style.top = '50%';
+      clonedFlagIcon.style.transformOrigin = 'center center';
+      clonedFlagIcon.style.transform = `translate(-50%, -50%) scale(${Number(flagScale.toFixed(4))})`;
+    }
     eccWrapper.appendChild(flagClone);
   };
 
@@ -2599,6 +2755,23 @@ function uiapeResolveLiveRdsIconHeight(preset, prefix, ptyHeight) {
   const mode = preset[`${prefix}_HEIGHT_MODE`];
   const customHeight = Number(preset[`${prefix}_HEIGHT`]);
   return mode === "CUSTOM" && Number.isFinite(customHeight) ? customHeight : ptyHeight;
+}
+
+function uiapeLabelFontSizeFromHeight(heightPx) {
+  const height = Number(heightPx);
+  return Math.max(1, (Number.isFinite(height) ? height : 16) - 4);
+}
+
+// Shared optical centering for ordinary framed text labels. PTY and MS are
+// intentionally excluded because they have their own icon/text adjustments.
+function uiapeCenterFramedTextLabel(label) {
+  if (!label) return;
+  label.style.display = 'inline-flex';
+  label.style.alignItems = 'center';
+  label.style.justifyContent = 'center';
+  label.style.boxSizing = 'border-box';
+  label.style.lineHeight = '1';
+  label.style.paddingBottom = /firefox/i.test(navigator.userAgent) ? '1px' : '0';
 }
 
 // RDS/stereo icon CSS scales are computed live in uiapeBuildLiveCss (rdsCssScale/stereoCssScale).
@@ -2639,11 +2812,10 @@ const RDS_ICON_STYLE_REMOVE_RDS_ICON = UIAPE_CONFIG.RDS_ICON_STYLE_REMOVE_RDS_IC
 // Bandwidth update interval in milliseconds.
 const BANDWIDTH_UPDATE_INTERVAL = UIAPE_CONFIG.BANDWIDTH_UPDATE_INTERVAL;
 // Enables glow effect for RDS icons.
-const LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY = UIAPE_CONFIG.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY;
-const LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS = UIAPE_CONFIG.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS;
-const LED_GLOW_EFFECT_ICONS_BANDWIDTH = UIAPE_CONFIG.LED_GLOW_EFFECT_ICONS_BANDWIDTH;
-// Enables glow effect for Metrics Monitor plugin icons.
-const LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN = UIAPE_CONFIG.LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN;
+const LED_GLOW_EFFECT_PTY = UIAPE_CONFIG.LED_GLOW_EFFECT_PTY;
+const LED_GLOW_EFFECT_MS = UIAPE_CONFIG.LED_GLOW_EFFECT_MS;
+const LED_GLOW_EFFECT_BW = UIAPE_CONFIG.LED_GLOW_EFFECT_BW;
+const LED_GLOW_EFFECT_STEREO_MPX = UIAPE_CONFIG.LED_GLOW_EFFECT_STEREO_MPX;
 // Replaces Metrics Monitor plugin MPX indicator icon with stereo icon.
 const REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN = UIAPE_CONFIG.REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN;
 const APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS = UIAPE_CONFIG.APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS;
@@ -3062,6 +3234,19 @@ function createUiapConfigLauncher() {
         line-height: 1.45;
       }
 
+      .uiape-plugin-detection-note {
+        margin: -2px 0 8px 0;
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--text-color-default, inherit);
+        opacity: 1;
+        text-align: left !important;
+      }
+
+      .uiape-plugin-guard-disabled {
+        opacity: 0.45;
+      }
+
       .uiape-config-row {
         display: grid;
         grid-template-columns: 1fr auto;
@@ -3074,6 +3259,17 @@ function createUiapConfigLauncher() {
 
       .uiape-config-row:first-of-type {
         border-top: 0;
+      }
+
+      .uiape-config-subsection-title {
+        margin: 12px 0 2px;
+        padding: 7px 8px 5px;
+        border-bottom: 1px solid color-mix(in srgb, var(--color-4, #888) 34%, transparent);
+        color: var(--color-main-bright, var(--color-4));
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .045em;
+        text-transform: uppercase;
       }
 
       .uiape-config-row-admin-only {
@@ -3583,12 +3779,16 @@ function createUiapConfigLauncher() {
           </div>
           <div class="uiape-config-body">
             <div class="uiape-config-section">
-              <div class="uiape-config-section-title">Core / General Settings</div>
+              <div class="uiape-config-section-title">General Settings</div>
               <div data-uiape-controls="core"></div>
               <!--<div class="uiape-config-warning">Changes are kept as a draft until you press <strong>Save All & Reload</strong>. Admin saves go to <code>plugins_configs/UIAddonPackEnhanced.json</code>; user saves stay as browser-local overrides.</div>-->
             </div>
             <div class="uiape-config-section">
-              <div class="uiape-config-section-title">Mobile / Sidebar / Users</div>
+              <div class="uiape-config-section-title">Indicator Settings</div>
+              <div data-uiape-controls="rds"></div>
+            </div>
+            <div class="uiape-config-section">
+              <div class="uiape-config-section-title">Mobile / Sidebar Settings</div>
               <div data-uiape-controls="mobile"></div>
             </div>
             <div class="uiape-config-section">
@@ -3596,12 +3796,8 @@ function createUiapConfigLauncher() {
               <div data-uiape-controls="tuning"></div>
             </div>
             <div class="uiape-config-section">
-              <div class="uiape-config-section-title">Visual Styling</div>
+              <div class="uiape-config-section-title">Visual Settings</div>
               <div data-uiape-controls="visual"></div>
-            </div>
-            <div class="uiape-config-section">
-              <div class="uiape-config-section-title">RDS / Stereo Icons</div>
-              <div data-uiape-controls="rds"></div>
             </div>
             <div class="uiape-config-section">
               <div class="uiape-config-section-title">Plugin Buttons</div>
@@ -3797,6 +3993,7 @@ function createUiapConfigLauncher() {
           "PTY_INDICATOR_COLOR_OFF",
           "MS_INDICATOR_COLOR",
           "MS_INDICATOR_COLOR_OFF",
+          "ECC_INDICATOR_COLOR",
           "ECC_INDICATOR_COLOR_OFF",
           "MULTIPATH_INDICATOR_COLOR",
           "MULTIPATH_INDICATOR_COLOR_OFF",
@@ -3822,13 +4019,13 @@ function createUiapConfigLauncher() {
         const UIAPE_RDS_PRESET_FIELDS = [
           ["FIRST_ROW", "text", "First row", "Comma-separated icons. Example: PTY, MS"],
           ["SECOND_ROW", "text", "Second row", "Comma-separated icons. Example: TP, TA, ECC, STEREO, MS"],
-          ["FIRST_ROW_GAP", "number", "First row gap", "Horizontal gap for first row."],
-          ["SECOND_ROW_GAP", "number", "Second row gap", "Horizontal gap for second row."],
-          ["TP_TA_GAP", "number", "TP / TA gap", "Special gap between TP and TA."],
+          ["FIRST_ROW_GAP", "number", "First-row spacing between icons", "Gap between first-row items when Horizontal spacing mode is Preset."],
+          ["SECOND_ROW_GAP", "number", "Second-row spacing between icons", "Gap between second-row items when Horizontal spacing mode is Preset."],
+          ["TP_TA_GAP", "number", "Spacing between TP / TA", "Dedicated gap between adjacent TP and TA labels in every spacing mode."],
           ["MS_TOP_PADDING", "number", "MS top padding", "Vertical alignment for MS."],
-          ["STEREO_ICON_SPACING", "number", "Stereo icon spacing", "Spacing around Stereo icon."],
-          ["ECC_ICON_SPACING", "number", "ECC icon spacing", "Spacing around ECC icon."],
-          ["ECC_FLAG_SPACING", "number", "ECC flag spacing", "Left inset of the flag icon within its fixed-width slot. Doesn't affect later icons' position."],
+          ["STEREO_ICON_SPACING", "number", "Stereo / MPX icon spacing after", "Extra space after the Stereo graphic or MPX label."],
+          ["ECC_ICON_SPACING", "number", "ECC icon spacing after", "Extra space after the ECC indicator when Preset spacing is used."],
+          ["ECC_FLAG_SPACING", "number", "ECC flag spacing before", "Left inset before the flag within its fixed-width slot. Does not move later icons."],
           ["PTY_HEIGHT", "number", "PTY height", "PTY indicator height."],
           ["MS_HEIGHT_MODE", "select", "MS height mode", "Follow PTY or use custom height.", [["PTY","Follow PTY"],["CUSTOM","Custom height"]]],
           ["MS_HEIGHT", "number", "MS custom height", "Used only when MS height mode is Custom."],
@@ -3837,10 +4034,10 @@ function createUiapConfigLauncher() {
           ["TA_HEIGHT_MODE", "select", "TA height mode", "Follow PTY or use custom height.", [["PTY","Follow PTY"],["CUSTOM","Custom height"]]],
           ["TA_HEIGHT", "number", "TA custom height", "Used only when TA height mode is Custom."],
           ["ECC_HEIGHT_MODE", "select", "ECC height mode", "Follow PTY or use custom height.", [["PTY","Follow PTY"],["CUSTOM","Custom height"]]],
-          ["ECC_HEIGHT", "number", "ECC custom height", "Used only when ECC height mode is Custom. Only affects the 'no ECC data' placeholder box, not the flag icon."],
-          ["BW_MARGIN_LEFT", "number", "BW margin left", "Bandwidth left offset."],
-          ["GAP_ROW_1", "number", "Row 1 vertical gap", "Preset row 1 vertical adjustment."],
-          ["GAP_ROW_2", "number", "Row 2 vertical gap", "Preset row 2 vertical adjustment."]
+          ["ECC_HEIGHT", "number", "ECC custom height", "Used only when ECC height mode is Custom. Applies to ECC text labels, not the flag image."],
+          ["BW_MARGIN_LEFT", "number", "BW spacing before", "Extra horizontal space before the bandwidth label."],
+          ["GAP_ROW_1", "number", "Row 1 vertical offset", "Moves preset row 1 vertically. Negative values raise the row; positive values lower it."],
+          ["GAP_ROW_2", "number", "Row 2 vertical offset", "Moves preset row 2 vertically. Negative values raise the row; positive values lower it."]
         ];
 
         // +++++++++++++++ STEP 3 +++++++++++++++ //
@@ -3854,17 +4051,25 @@ function createUiapConfigLauncher() {
             ["BUTTON_FM_LIST_MOD_MINIMUM_HIDE_DISTANCE", "number", "FMList hide distance", "Minimum distance in km before FMLIST button appears."]
           ],
           mobile: [
-            ["MOVE_MOBILE_TRAY_TO_TOP", "checkbox", "Move mobile tray to top (mobile)", "Relocates the native mobile tray."],
-            ["HIDE_MOBILE_TRAY", "checkbox", "Hide mobile tray (mobile)", "Hides the mobile tray except play button."],
-            ["MOBILE_STATUS_BAR", "checkbox", "Mobile status bar (mobile)", "Shows fixed mobile status bar."],
-            ["MOBILE_STATUS_BAR_SHOW_USERS", "checkbox", "Status bar users (mobile)", "Moves online users icon to status bar."],
-            ["MOBILE_STATUS_BAR_CONNECTION", "checkbox", "Status bar connection (mobile)", "Shows audio stream status icon."],
+            [null, "heading", "Mobile Interface Settings"],
+            ["DISPLAY_CANVAS_IN_LANDSCAPE_MODE", "checkbox", "Show canvas in mobile landscape", "Shows the signal canvas in mobile landscape orientation."],
+            ["DISPLAY_CANVAS_IN_PORTRAIT_MODE", "checkbox", "Show canvas in mobile portrait", "Shows the signal canvas in mobile portrait orientation."],
+            ["MOVE_MOBILE_TRAY_TO_TOP", "checkbox", "Move mobile tray to top", "Moves the native mobile tray to the top of the screen."],
+            ["HIDE_MOBILE_TRAY", "checkbox", "Hide mobile tray", "Hides the mobile tray except for the play button."],
+            ["MOBILE_STATUS_BAR", "checkbox", "Show mobile status bar", "Shows the fixed mobile status bar."],
+            ["MOBILE_STATUS_BAR_SHOW_USERS", "checkbox", "Show users in status bar", "Moves the online-users indicator into the mobile status bar."],
+            ["MOBILE_STATUS_BAR_CONNECTION", "checkbox", "Show connection in status bar", "Shows the audio-stream connection indicator in the mobile status bar."],
+            ["REDUCE_TEXT_ON_NARROW_SCREENS", "checkbox", "Reduce PS / RT text on narrow screens", "Reduces Programme Service and Radiotext size on narrow screens."],
+
+            [null, "heading", "Sidebar Settings"],
             ["SIDEBAR_ADDITIONS", "checkbox", "Sidebar additions", "Enables extra sidebar options."],
-            ["SIDEBAR_ADDITIONS_EXPAND_CANVAS", "checkbox", "Sidebar expand canvas (enable Sidebar additions)", "Adds canvas height option."],
-            ["SIDEBAR_ADDITIONS_HIDE_BACKGROUND", "checkbox", "Sidebar hide background (enable Sidebar additions)", "Adds background hide option."],
-            ["REDUCE_SIDEBAR_BLUR", "checkbox", "Reduce sidebar blur", "Uses lighter blur when sidebar opens."],
-            ["MULTIPLE_USERS_NOTICE", "checkbox", "Multiple users notice", "Shows notice when more users are connected."],
-            ["MULTIPLE_USERS_NOTICE_NATIVE_POPUP", "checkbox", "Native popup notice", "Uses native popup style for multiple users notice."],
+            ["SIDEBAR_ADDITIONS_EXPAND_CANVAS", "checkbox", "Add canvas expansion control", "Adds a canvas-height control when Sidebar additions is enabled."],
+            ["SIDEBAR_ADDITIONS_HIDE_BACKGROUND", "checkbox", "Add background visibility control", "Adds a background-visibility control when Sidebar additions is enabled."],
+            ["REDUCE_SIDEBAR_BLUR", "checkbox", "Reduce sidebar blur", "Uses a lighter blur while the sidebar is open."],
+
+            [null, "heading", "Multiple Users Settings"],
+            ["MULTIPLE_USERS_NOTICE", "checkbox", "Show multiple-users notice", "Shows a notice when multiple users are connected."],
+            ["MULTIPLE_USERS_NOTICE_NATIVE_POPUP", "checkbox", "Use native popup", "Uses the native popup style for the multiple-users notice."],
             ["MULTIPLE_USERS_NOTICE_MESSAGE_1", "text", "Notice message 1", "First line of the multiple users notice."],
             ["MULTIPLE_USERS_NOTICE_MESSAGE_2", "text", "Notice message 2", "Second line of the multiple users notice."]
           ],
@@ -3878,8 +4083,7 @@ function createUiapConfigLauncher() {
             ["S_UNITS_HIDE_LABEL", "checkbox", "Hide S-units label", "Hides the \"S-units\" text shown next to the reading."]
           ],
           visual: [
-            ["DISPLAY_CANVAS_IN_LANDSCAPE_MODE", "checkbox", "Canvas in landscape (mobile)", "Mobile landscape canvas display."],
-            ["DISPLAY_CANVAS_IN_PORTRAIT_MODE", "checkbox", "Canvas in portrait (mobile)", "Mobile portrait canvas display."],
+            [null, "heading", "Appearance Settings"],
             ["ADD_PADDING_TO_PANELS", "checkbox", "Add panel padding", "Adds padding to RT/PTY/PS panels."],
             ["GLOW_EFFECT_ON_FREQUENCY_INPUT", "checkbox", "Frequency input glow", "Glow around frequency input while focused."],
             ["REDUCE_HALF_OPACITY", "checkbox", "Reduce half opacity", "Makes inactive elements dimmer."],
@@ -3887,7 +4091,8 @@ function createUiapConfigLauncher() {
             ["INCREASE_FREQUENCY_FONT_WEIGHT", "checkbox", "Bolder frequency", "Increases frequency font weight."],
             ["GRADIENT_BUTTONS", "checkbox", "Gradient buttons", "Adds gradient styling to buttons."],
             ["INCLUDE_SCANNER_BUTTONS", "checkbox", "Gradient includes scanner buttons", "Extends gradient styling to scanner controls."],
-            ["LED_GLOW_EFFECT_ICONS", "checkbox", "Glow icons", "Glow effect for icon indicators."],
+
+            [null, "heading", "Text Glow Settings"],
             ["LED_GLOW_EFFECT_LARGE", "checkbox", "Glow large text", "Glow effect for large text/digits."],
             ["LED_GLOW_EFFECT_SMALL", "checkbox", "Glow small text", "Glow effect for small text/digits."],
             ["LED_GLOW_EFFECT_RDSPS", "checkbox", "Glow RDS PS", "Glow effect for RDS PS text."],
@@ -3897,71 +4102,88 @@ function createUiapConfigLauncher() {
             ["PANEL_STYLE_EFFECT_SIGNAL_PANEL", "checkbox", "Signal panel style", "Applies panel style effect to signal panel."],
             ["VOLUME_PERCENTAGE_TOAST", "checkbox", "Volume toast", "Displays toast when volume changes."],
             ["LOWER_TOAST_NOTIFICATIONS", "checkbox", "Lower toast notifications", "Moves toast notifications further down from the top of the screen."],
-            ["REDUCE_TEXT_ON_NARROW_SCREENS", "checkbox", "Smaller PS/RT text when narrow", "Reduces PS and radiotext size on narrow screens."],
-            ["RDS_FLAG_INDICATOR", "checkbox", "RDS flag indicator", "Shows A/B bullet next to radiotext."]
+            ["RDS_FLAG_INDICATOR", "select", "RDS flag indicator", "Marks the active RadioText A/B field with a bullet or a bold A:/B: label.", [["NONE","None"],["BULLETS","Bullets"],["AB","A/B"]]]
           ],
           rds: [
-            ["RDS_ICON_STYLE", "checkbox", "Enable UI Addon Icons Style", "Enables RDS, PTY, TP, TA icons."],
-            ["RDS_ICON_STYLE_MOBILE", "checkbox", "Enable UI Addon Icons Style on mobile", "Enables UI Addon Icons Style on mobile, and turns on the setting above too since this depends on it."],
-            ["PTY_DISPLAY_MODE", "select", "Show PTY as", "Choose how PTY label is displayed.", [["FULL", "Full label"], ["SHORT", "Short label"], ["ICON_SHORT", "Icon & short label"]]],
-            ["PTY_ICON_OFFSET_Y", "number", "PTY icon vertical offset", "Raises or lowers the PTY icon in pixels. Negative raises. Only used by Icon & short label."],
-            ["PTY_ICON_GAP", "number", "PTY icon spacing", "Gap in pixels between the PTY icon and its text. Only used by Icon & short label."],
-
+            [null, "heading", "Icon System Settings"],
+            ["RDS_ICON_STYLE", "checkbox", "Enable UI Add-on icon style", "Enables the configurable RDS indicator header."],
+            ["RDS_ICON_STYLE_MOBILE", "checkbox", "Enable icon style on mobile", "Enables the UI Add-on indicator header on mobile and also enables the main icon-style setting."],
             ["IS_TEF_RADIO", "checkbox", "TEF radio mode", "Uses TEF radio MP assumption."],
             ["METRICS_MONITOR_PLUGIN_IS_INSTALLED", "checkbox", "Metrics Monitor installed", "Enable if Metrics Monitor plugin is installed."],
-            ["IS_VISUALEQ_PLUGIN_ENABLED", "checkbox", "VisualEQ enabled", "Enable if VisualEQ plugin is installed."],
+            ["IS_VISUALEQ_PLUGIN_ENABLED", "checkbox", "VisualEQ installed", "Enable if VisualEQ plugin is installed."],
 
-            ["HORIZONTAL_ICON_SPACING_MODE", "select", "Horizontal icon spacing", "Preset uses the individual spacing values below. Uniform uses one shared gap. Auto calculates a centered gap from the available row width and keeps the row away from the panel edges.", [["PRESET","Preset"],["UNIFORM","Uniform"],["AUTO","Auto"]]],
-            ["HORIZONTAL_ICON_SPACING_UNIFORM", "number", "Uniform horizontal spacing", "Shared spacing in pixels when Horizontal icon spacing is Uniform."],
-            ["HORIZONTAL_ICON_SPACING_AUTO_MIN", "number", "Auto spacing minimum", "Minimum gap in pixels used by Auto mode."],
-            ["HORIZONTAL_ICON_SPACING_AUTO_MAX", "number", "Auto spacing maximum", "Maximum gap in pixels used by Auto mode."],
+            [null, "heading", "Layout Settings"],
+            ["RDS_ICON_PRESET", "select", "Icon layout preset", "Select a built-in layout or the editable User-defined preset.", [["0","User defined"],["1","Preset 1"],["2","Preset 2"],["3","Preset 3"]]],
+            ["HORIZONTAL_ICON_SPACING_MODE", "select", "Horizontal spacing mode", "Preset uses the individual preset values. Uniform uses one gap between all items. Auto calculates centered spacing from the available row width.", [["PRESET","Preset"],["UNIFORM","Uniform"],["AUTO","Auto"]]],
+            ["HORIZONTAL_ICON_SPACING_UNIFORM", "number", "Uniform spacing between icons", "Gap in pixels between row items when Horizontal spacing mode is Uniform."],
+            ["HORIZONTAL_ICON_SPACING_AUTO_MIN", "number", "Auto minimum spacing between icons", "Smallest gap between row items in Auto mode."],
+            ["HORIZONTAL_ICON_SPACING_AUTO_MAX", "number", "Auto maximum spacing between icons", "Largest gap between row items in Auto mode."],
+            ["RDS_ICON_SCALE_AUTO_FIT", "checkbox", "Auto-fit icon rows", "Shrinks the configured icon rows when required to fit the available width."],
+            ["RDS_ICON_SCALE_AUTO_FIT_PADDING", "number", "Auto-fit left / right edge spacing", "Space reserved at both sides of the standard icon row. Negative values allow a wider row."],
+            ["RDS_ICON_SCALE_AUTO_FIT_PADDING_MM", "number", "Auto-fit left / right edge spacing (Metrics Monitor)", "Space reserved at both sides when Metrics Monitor owns the icon row."],
 
-            ["RDS_ICON_PRESET", "select", "RDS icon preset", "0 user, 1 preset 1, 2 preset 2, 3 preset 3.", [["0","User defined"],["1","Preset 1"],["2","Preset 2"],["3","Preset 3"]]],
-
+            [null, "heading", "Stereo / MPX Settings"],
             ["STEREO_ICON_COLOR", "color", "Stereo icon color", "default, auto, or custom #RRGGBB."],
             ["STEREO_ICON_COLOR_OFF", "color", "Stereo off color", "default, auto, or custom #RRGGBB."],
-            ["STEREO_ICON_WIDTH", "number", "Stereo icon width", "Stereo circle thickness."],
+            ["STEREO_ICON_WIDTH", "number", "Stereo line thickness", "Thickness of the Stereo indicator circles."],
             ["STEREO_ICON_SCALE", "number", "Stereo icon scale", "Size in percentage. Normalised to match RDS visual size."],
             ["APPLY_STEREO_ICON_GLOW_WITH_MISSING_RDS", "checkbox", "Stereo glow without RDS", "Keeps stereo glow when RDS is missing."],
+            ["REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN", "checkbox", "Replace MPX with Stereo", "Shows the UI Add-on Stereo indicator instead of the Metrics Monitor MPX label."],
 
+            [null, "heading", "RDS Settings"],
+            ["RDS_INDICATOR_ICON_TYPE", "select", "RDS indicator type", "Selects the RDS indicator artwork.", [["1","Type 1"],["2","Type 2"]]],
+            ["RDS_INDICATOR_ICON_COLOR", "color", "RDS active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["RDS_INDICATOR_ICON_COLOR_OFF", "color", "RDS inactive color", "Default, Auto, or a custom #RRGGBB color."],
             ["RDS_ICON_SCALE", "number", "RDS icon scale", "Size in percentage."],
-            ["RDS_ICON_SCALE_AUTO_FIT", "checkbox", "Auto-fit RDS icon scale", "Shrinks the icon row below the set scale when it is too wide to fit."],
-            ["RDS_ICON_SCALE_AUTO_FIT_PADDING", "number", "Auto-fit padding", "Pixels kept clear at each end of the icon row. Negative allows it wider."],
-            ["RDS_ICON_SCALE_AUTO_FIT_PADDING_MM", "number", "Auto-fit padding (Metrics Monitor)", "Auto-fit padding used when Metrics Monitor owns the icon row."],
-            ["RDS_ICON_STYLE_MS_OFF_AS_LETTERS", "checkbox", "MS off as letters", "Uses MS letters for dimmed Music/Speech icons."],
-            ["RDS_INDICATOR_ICON_TYPE", "select", "RDS indicator type", "RDS indicator icon type.", [["1","Type 1"],["2","Type 2"]]],
-            ["RDS_INDICATOR_ICON_COLOR", "color", "RDS icon color", "default, auto, or custom #RRGGBB."],
-            ["RDS_INDICATOR_ICON_COLOR_OFF", "color", "RDS off color", "default, auto, or custom #RRGGBB."],
-            ["RDS_INDICATOR_ICON_GLOW_INTENSITY", "number", "RDS glow intensity", "Numeric glow intensity."],
-            ["TP_INDICATOR_ICON_COLOR", "color", "TP color", "default, auto, or custom #RRGGBB."],
-            ["TP_INDICATOR_ICON_COLOR_OFF", "color", "TP off color", "default, auto, or custom #RRGGBB."],
-            ["TA_INDICATOR_ICON_COLOR", "color", "TA color", "default, auto, or custom #RRGGBB."],
-            ["TA_INDICATOR_ICON_COLOR_OFF", "color", "TA off color", "default, auto, or custom #RRGGBB."],
-            ["PTY_INDICATOR_COLOR", "color", "PTY color", "default, auto, or custom #RRGGBB."],
-            ["PTY_INDICATOR_COLOR_OFF", "color", "PTY off color", "default, auto, or custom #RRGGBB."],
-            ["MS_INDICATOR_COLOR", "color", "MS color", "default, auto, or custom #RRGGBB."],
-            ["MS_INDICATOR_COLOR_OFF", "color", "MS off color", "default, auto, or custom #RRGGBB."],
+            ["RDS_ICON_STYLE_REMOVE_RDS_ICON", "checkbox", "Hide RDS indicator", "Removes the RDS indicator from the configurable icon rows."],
+
+            [null, "heading", "TP / TA Settings"],
+            ["TP_INDICATOR_ICON_COLOR", "color", "TP active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["TP_INDICATOR_ICON_COLOR_OFF", "color", "TP inactive color", "Default, Auto, or a custom #RRGGBB color."],
+            ["TA_INDICATOR_ICON_COLOR", "color", "TA active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["TA_INDICATOR_ICON_COLOR_OFF", "color", "TA inactive color", "Default, Auto, or a custom #RRGGBB color."],
+
+            [null, "heading", "PTY / MS Settings"],
+            ["PTY_DISPLAY_MODE", "select", "Show PTY as", "Selects how the PTY indicator is displayed.", [["FULL", "Full label"], ["SHORT", "Short label"], ["ICON_SHORT", "Icon & short label"]]],
+            ["PTY_ICON_OFFSET_Y", "number", "PTY icon vertical offset", "Raises or lowers the PTY icon. Negative values raise it. Used only with Icon & short label."],
+            ["PTY_ICON_GAP", "number", "Spacing between PTY icon and text", "Gap in pixels between the PTY icon and its text. Used only with Icon & short label."],
+            ["PTY_INDICATOR_COLOR", "color", "PTY active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["PTY_INDICATOR_COLOR_OFF", "color", "PTY inactive color", "Default, Auto, or a custom #RRGGBB color."],
+            ["MS_INDICATOR_COLOR", "color", "MS active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["MS_INDICATOR_COLOR_OFF", "color", "MS inactive color", "Default, Auto, or a custom #RRGGBB color."],
+            ["RDS_ICON_STYLE_MS_OFF_AS_LETTERS", "checkbox", "Show inactive MS as letters", "Uses MS letters instead of the dimmed Music/Speech icon."],
+
+            [null, "heading", "ECC Settings"],
             ["ECC_DISPLAY_MODE", "select", "Show ECC as", "Choose how ECC country information is displayed using the webserver's native country flag/ISO code.", [["FLAG","Flag"],["COUNTRY_CODE","Country code"],["FLAG_CC","Flag & country code"]]],
-            ["ECC_INDICATOR_COLOR", "color", "ECC active color", "default, auto, or custom #RRGGBB. Applies only to the country-code text and border; the flag is unchanged."],
-            ["LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_ECC_CC", "checkbox", "ECC country code glow", "Glow effect for the ECC country code text and border only."],
-            ["ECC_INDICATOR_COLOR_OFF", "color", "ECC off color", "default, auto, or custom #RRGGBB. Only affects the fallback label shown when there's no flag to display."],
-            ["RDS_ICON_STYLE_REMOVE_RDS_ICON", "checkbox", "Remove RDS icon", "Useful with multipath/Metrics Monitor setups."],
+            ["ECC_INDICATOR_COLOR", "color", "ECC active color", "Default, Auto, or a custom #RRGGBB color. Applies to the country-code text and border; the flag is unchanged."],
+            ["ECC_INDICATOR_COLOR_OFF", "color", "ECC inactive color", "Default, Auto, or a custom #RRGGBB color. Applies to the fallback ECC label."],
+            ["ECC_FLAG_SPACING_METRICS_MONITOR", "number", "ECC flag spacing before (Metrics Monitor)", "Extra space before the ECC flag when Metrics Monitor owns the icon row."],
+
+            [null, "heading", "Bandwidth Settings"],
+            ["BANDWIDTH_UPDATE_INTERVAL", "number", "Bandwidth update interval", "Update interval in milliseconds."],
+            ["BW_INDICATOR_COLOR", "color", "BW active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["BW_INDICATOR_COLOR_OFF", "color", "BW inactive color", "Default, Auto, or a custom #RRGGBB color."],
+
+            [null, "heading", "Multipath Settings"],
             ["MULTIPATH_INDICATOR", "checkbox", "Multipath indicator", "Adds multipath icon/text."],
             ["MULTIPATH_ATTACH_TO", "select", "Multipath attach to", "Target icon for multipath indicator.", [["STEREO","STEREO"],["PTY","PTY"],["MS","MS"],["ECC","ECC"],["TP","TP"],["TA","TA"],["RDS","RDS"],["BW","BW"]]],
-            ["MULTIPATH_LEFT_PADDING", "number", "Multipath left padding", "Spacing when not attached to Stereo/Mono."],
+            ["MULTIPATH_LEFT_PADDING", "number", "Multipath spacing before", "Horizontal space before the Multipath indicator. Negative values move it toward the previous item."],
             ["MULTIPATH_DISPLAY_MODE", "select", "Multipath display mode", "Icon, text, or both.", [["ICON","ICON"],["TEXT","TEXT"],["BOTH","BOTH"]]],
             ["MULTIPATH_TEXT_SIZE", "number", "Multipath text size", "Size in percentage. Font size for the RF/MP text."],
-            ["MULTIPATH_INDICATOR_COLOR", "color", "Multipath color", "default, auto, or custom #RRGGBB."],
-            ["MULTIPATH_INDICATOR_COLOR_OFF", "color", "Multipath off color", "default, auto, or custom #RRGGBB."],
-            ["BANDWIDTH_UPDATE_INTERVAL", "number", "Bandwidth update interval", "Milliseconds."],
-            ["BW_INDICATOR_COLOR", "color", "BW color", "default, auto, or custom #RRGGBB."],
-            ["BW_INDICATOR_COLOR_OFF", "color", "BW off color", "default, auto, or custom #RRGGBB."],
-            ["LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY", "checkbox", "PTY icon glow", "Glow effect for PTY RDS icon style."],
-            ["LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS", "checkbox", "MS icon glow", "Glow effect for MS RDS icon style."],
-            ["LED_GLOW_EFFECT_ICONS_BANDWIDTH", "checkbox", "Bandwidth icon glow", "Glow effect for bandwidth."],
-            ["LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN", "checkbox", "Metrics icon glow", "Glow for Metrics Monitor icons."],
-            ["REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN", "checkbox", "Replace MPX with stereo", "Metrics Monitor compatibility option."],
-            ["ECC_FLAG_SPACING_METRICS_MONITOR", "number", "ECC flag spacing (Metrics Monitor)", "Extra left offset that aligns the ECC flag with the ECC text icon, only used when Metrics Monitor installed is enabled."]
+            ["MULTIPATH_INDICATOR_COLOR", "color", "Multipath active color", "Default, Auto, or a custom #RRGGBB color."],
+            ["MULTIPATH_INDICATOR_COLOR_OFF", "color", "Multipath inactive color", "Default, Auto, or a custom #RRGGBB color."],
+
+            [null, "heading", "Icon Glow Settings"],
+            ["LED_GLOW_EFFECT_ALL_ICONS", "checkbox", "Glow all icons", "Turns every individual icon glow switch on or off."],
+            ["LED_GLOW_EFFECT_STEREO_MPX", "checkbox", "Glow Stereo / MPX", "Glow for the Stereo indicator and Metrics Monitor MPX label."],
+            ["LED_GLOW_EFFECT_RDS", "checkbox", "Glow RDS", "Glow for the active RDS indicator."],
+            ["LED_GLOW_EFFECT_MS", "checkbox", "Glow MS", "Glow for the active Music/Speech indicator."],
+            ["LED_GLOW_EFFECT_TP_TA", "checkbox", "Glow TP / TA", "Glow for active TP and TA indicators."],
+            ["LED_GLOW_EFFECT_PTY", "checkbox", "Glow PTY", "Glow for the active PTY label."],
+            ["LED_GLOW_EFFECT_ECC", "checkbox", "Glow ECC", "Glow effect for the ECC country code text and border."],
+            ["LED_GLOW_EFFECT_BW", "checkbox", "Glow BW", "Glow for the active bandwidth label."],
+            ["LED_GLOW_EFFECT_MULTIPATH", "checkbox", "Glow Multipath", "Glow for the active Multipath icon."],
+            ["RDS_INDICATOR_ICON_GLOW_INTENSITY", "number", "Icon glow intensity", "Shared glow intensity used by the configurable text and RDS indicators."]
           ],
           plugins: [
             ["SORT_PLUGIN_BUTTONS", "checkbox", "Sort plugin buttons", "Enables custom plugin button order."],
@@ -4118,6 +4340,9 @@ function createUiapConfigLauncher() {
           const type = def[1];
           const label = def[2];
           const help = def[3] || "";
+          if (type === "heading") {
+            return `<div class="uiape-config-subsection-title">${uiapeEscapeHtml(label)}</div>`;
+          }
           const options = def[4] || [];
           const config = getUiapPanelConfig();
           const value = config[key];
@@ -4355,6 +4580,32 @@ function createUiapConfigLauncher() {
               rendered.splice(presetIndex === -1 ? rendered.length : presetIndex + 1, 0, uiapeRenderRdsPresetEditor());
             }
             target.innerHTML = rendered.join("");
+            if (sectionName === "rds") {
+              const applyPluginDetectionGuard = (key, isDetected, activeMessage, inactiveMessage) => {
+                const field = target.querySelector(`[data-uiape-key="${key}"]`);
+                const row = field?.closest(".uiape-config-row");
+                if (!row) return;
+                field.disabled = !isDetected;
+                row.classList.toggle("uiape-plugin-guard-disabled", !isDetected);
+                const note = document.createElement("div");
+                note.className = "uiape-plugin-detection-note";
+                const message = isDetected ? activeMessage : inactiveMessage;
+                note.innerHTML = `<strong>NOTE:</strong> ${uiapeEscapeHtml(message)}`;
+                row.insertAdjacentElement("afterend", note);
+              };
+              applyPluginDetectionGuard(
+                "METRICS_MONITOR_PLUGIN_IS_INSTALLED",
+                uiapeIsMetricsMonitorActive(),
+                "Metrics Monitor is installed and active.",
+                "Activate the Metrics Monitor plugin to enable this feature."
+              );
+              applyPluginDetectionGuard(
+                "IS_VISUALEQ_PLUGIN_ENABLED",
+                uiapeIsVisualEqDetectedActive(),
+                "VisualEQ is installed and active.",
+                "Activate the VisualEQ plugin to enable this feature."
+              );
+            }
             if (sectionName === "plugins") target.insertAdjacentHTML("beforeend", uiapeRenderPluginOrderHelper());
 
             // Hide the whole section (title included) when it has no controls this user can see.
@@ -4366,6 +4617,14 @@ function createUiapConfigLauncher() {
               sectionEl.dataset.uiapeEmpty = String(isEmpty);
             }
           });
+          const glowCfg = getUiapPanelConfig();
+          const glowMaster = panel.querySelector('[data-uiape-key="LED_GLOW_EFFECT_ALL_ICONS"]');
+          if (glowMaster) {
+            const allOn = UIAPE_ICON_GLOW_KEYS.every(key => glowCfg[key] === true);
+            const anyOn = UIAPE_ICON_GLOW_KEYS.some(key => glowCfg[key] === true);
+            glowMaster.checked = allOn;
+            glowMaster.indeterminate = anyOn && !allOn;
+          }
           uiapeApplySearchFilter();
           uiapeBindPanelTooltips(panel);
         }
@@ -4424,6 +4683,14 @@ function createUiapConfigLauncher() {
               [field]: isValidValue ? nextValue : UIAPE_DEFAULT_CONFIG.RDS_ICON_STYLE_PRESETS.user[field]
             }
           };
+          // These controls edit the User-defined preset. Make it active on the first
+          // manual adjustment so the change is visible immediately instead of silently
+          // modifying an inactive preset while Preset 1-3 remains on screen.
+          if (Number(config.RDS_ICON_PRESET) !== 0) {
+            updateUiapConfig("RDS_ICON_PRESET", 0);
+            const presetSelect = panel.querySelector('[data-uiape-key="RDS_ICON_PRESET"]');
+            if (presetSelect) presetSelect.value = '0';
+          }
           updateUiapConfig("RDS_ICON_STYLE_PRESETS", nextPresets);
         }
 
@@ -4431,6 +4698,19 @@ function createUiapConfigLauncher() {
         uiapeRenderAllControlsFn = uiapeRenderAllControls;
 
         panel.querySelector("#uiape-config-search-input")?.addEventListener("input", uiapeApplySearchFilter);
+
+        // Numeric preset adjustments are visual tuning controls. Apply them while typing
+        // (and while using the input steppers), rather than waiting for blur/change.
+        panel.addEventListener("input", (event) => {
+          const field = event.target;
+          const presetField = field?.dataset?.uiapePresetField;
+          if (!presetField || (field.type !== "number" && field.dataset.uiapeType !== "number")) return;
+          const value = Number(field.value);
+          if (!Number.isFinite(value)) return;
+          uiapeUpdateUserPresetField(presetField, value);
+          uiapeSyncResetButton(field.closest(".uiape-config-control"), presetField, "preset");
+          uiapeSyncAdminDiffDot(field.closest(".uiape-config-row")?.querySelector(".uiape-config-label"), presetField, "preset");
+        });
 
         const searchDescToggle = panel.querySelector("#uiape-config-search-descriptions");
         if (searchDescToggle) {
@@ -4539,7 +4819,56 @@ function createUiapConfigLauncher() {
             value = field.value;
           }
 
+          if (key === "LED_GLOW_EFFECT_ALL_ICONS") {
+            UIAPE_ICON_GLOW_KEYS.forEach(glowKey => updateUiapConfig(glowKey, value));
+            updateUiapConfig(key, value);
+            uiapeRenderAllControls();
+            return;
+          }
+
+          // If MetricsMonitor is already running, enabling the UI Add-on header must
+          // enter compatibility mode before RDS_ICON_STYLE builds anything. This
+          // prevents a temporary standalone signalPanel after first run or reset.
+          if (
+            key === "RDS_ICON_STYLE" &&
+            value === true &&
+            !getUiapPanelConfig().METRICS_MONITOR_PLUGIN_IS_INSTALLED &&
+            uiapeIsMetricsMonitorActive()
+          ) {
+            updateUiapConfig("METRICS_MONITOR_PLUGIN_IS_INSTALLED", true);
+            const metricsField = panel.querySelector('[data-uiape-key="METRICS_MONITOR_PLUGIN_IS_INSTALLED"]');
+            if (metricsField) metricsField.checked = true;
+            uiapeSyncResetButton(metricsField?.closest(".uiape-config-control"), "METRICS_MONITOR_PLUGIN_IS_INSTALLED", "plain");
+            uiapeSyncAdminDiffDot(metricsField?.closest(".uiape-config-row")?.querySelector(".uiape-config-label"), "METRICS_MONITOR_PLUGIN_IS_INSTALLED", "plain");
+          }
+
+          if (
+            key === "RDS_ICON_STYLE" &&
+            value === true &&
+            !getUiapPanelConfig().IS_VISUALEQ_PLUGIN_ENABLED &&
+            uiapeIsVisualEqDetectedActive()
+          ) {
+            updateUiapConfig("IS_VISUALEQ_PLUGIN_ENABLED", true);
+            const visualEqField = panel.querySelector('[data-uiape-key="IS_VISUALEQ_PLUGIN_ENABLED"]');
+            if (visualEqField) visualEqField.checked = true;
+            uiapeSyncResetButton(visualEqField?.closest(".uiape-config-control"), "IS_VISUALEQ_PLUGIN_ENABLED", "plain");
+            uiapeSyncAdminDiffDot(visualEqField?.closest(".uiape-config-row")?.querySelector(".uiape-config-label"), "IS_VISUALEQ_PLUGIN_ENABLED", "plain");
+          }
+
           updateUiapConfig(key, value);
+
+          if (UIAPE_ICON_GLOW_KEYS.includes(key)) {
+            const glowCfg = getUiapPanelConfig();
+            const allOn = UIAPE_ICON_GLOW_KEYS.every(glowKey => glowCfg[glowKey] === true);
+            updateUiapConfig("LED_GLOW_EFFECT_ALL_ICONS", allOn);
+            uiapeRenderAllControls();
+            const master = panel.querySelector('[data-uiape-key="LED_GLOW_EFFECT_ALL_ICONS"]');
+            if (master) {
+              const anyOn = UIAPE_ICON_GLOW_KEYS.some(glowKey => getUiapPanelConfig()[glowKey] === true);
+              master.indeterminate = anyOn && !allOn;
+            }
+            return;
+          }
 
           // Automatically select "Enable UI Addon Icons Style" if "Enable UI Addon Icons Style on mobile"
           // is selected, to highlight to the user that both are required.
@@ -4873,7 +5202,7 @@ document.head.insertBefore(styleElement, uiapeStyleAnchor);
 
         existingStyle.textContent = `.circle.data-st { border: 2px solid var(--uiape-stereo-icon-color) }`;
 
-        if (!liveStereoCfg.LED_GLOW_EFFECT_ICONS) {
+        if (!liveStereoCfg.LED_GLOW_EFFECT_STEREO_MPX) {
           el.style.backgroundColor = '';
           el.style.boxShadow = '';
           return;
@@ -5990,6 +6319,8 @@ setTimeout(function() {
 let uiapeRdsFlagLastProcessedTime = 0;
 let uiapeRdsFlagReconnectAttempts = 0;
 let uiapeRdsFlagDomReady = false;
+let uiapeRdsFlagSocket = null;
+let uiapeRdsFlagReconnectTimer = null;
 
 const UIAPE_RDS_FLAG_TIMEOUT_DURATION = 75;
 
@@ -5997,29 +6328,44 @@ uiapeOnDomReady(() => {
     uiapeRdsFlagDomReady = true;
 });
 
-function uiapeConnectRdsFlagWebSocket() {
-    if (window.socket.readyState === WebSocket.OPEN) {
-        uiapeRdsFlagReconnectAttempts = 0;
+function uiapeDetachRdsFlagWebSocket() {
+    if (!uiapeRdsFlagSocket) return;
+    uiapeRdsFlagSocket.removeEventListener('message', handle_RDS_FLAG_INDICATOR);
+    uiapeRdsFlagSocket.removeEventListener('close', uiapeHandleRdsFlagSocketClose);
+    uiapeRdsFlagSocket.removeEventListener('error', uiapeHandleRdsFlagSocketError);
+    uiapeRdsFlagSocket = null;
+}
+
+function uiapeHandleRdsFlagSocketClose() {
+    console.log(`[${pluginName}] RDS_FLAG_INDICATOR: WebSocket closed. Attempting to reconnect...`);
+    uiapeDetachRdsFlagWebSocket();
+    uiapeAttemptReconnectRdsFlag();
+}
+
+function uiapeHandleRdsFlagSocketError() {
+    uiapeAttemptReconnectRdsFlag();
+}
+
+async function uiapeConnectRdsFlagWebSocket() {
+    try {
+        const socket = await window.socket;
+        if (!socket || typeof socket.addEventListener !== 'function') throw new Error('WebSocket unavailable');
+        if (uiapeRdsFlagSocket === socket) return;
+        uiapeDetachRdsFlagWebSocket();
+        uiapeRdsFlagSocket = socket;
+        if (socket.readyState === WebSocket.OPEN) uiapeRdsFlagReconnectAttempts = 0;
+        socket.addEventListener('message', handle_RDS_FLAG_INDICATOR);
+        socket.addEventListener('close', uiapeHandleRdsFlagSocketClose);
+        socket.addEventListener('error', uiapeHandleRdsFlagSocketError);
+    } catch (error) {
+        uiapeAttemptReconnectRdsFlag();
     }
-
-    window.socket.addEventListener('message', (event) => {
-        handle_RDS_FLAG_INDICATOR(event);
-    });
-
-    window.socket.addEventListener('close', () => {
-        console.log(`[${pluginName}] RDS_FLAG_INDICATOR: WebSocket closed. Attempting to reconnect...`);
-        uiapeAttemptReconnectRdsFlag();
-    });
-
-    window.socket.addEventListener('error', (err) => {
-        uiapeAttemptReconnectRdsFlag();
-    });
 }
 
 function uiapeAttemptReconnectRdsFlag() {
-    if (uiapeRdsFlagReconnectAttempts >= 500) return;
-
-    setTimeout(() => {
+    if (uiapeRdsFlagReconnectAttempts >= 500 || uiapeRdsFlagReconnectTimer) return;
+    uiapeRdsFlagReconnectTimer = setTimeout(() => {
+        uiapeRdsFlagReconnectTimer = null;
         uiapeRdsFlagReconnectAttempts++;
         uiapeConnectRdsFlagWebSocket();
     }, 10000);
@@ -6028,10 +6374,16 @@ function uiapeAttemptReconnectRdsFlag() {
 function handle_RDS_FLAG_INDICATOR(event) {
     const rtElement0 = document.querySelector('#data-rt0');
     const rtElement1 = document.querySelector('#data-rt1');
+    const mode = String(getUiapPanelConfig().RDS_FLAG_INDICATOR || "NONE").toUpperCase();
 
-    if (!getUiapPanelConfig().RDS_FLAG_INDICATOR) {
-        if (rtElement0 && rtElement0.querySelector('span.bullet')) rtElement0.removeChild(rtElement0.querySelector('span.bullet'));
-        if (rtElement1 && rtElement1.querySelector('span.bullet')) rtElement1.removeChild(rtElement1.querySelector('span.bullet'));
+    const removeExistingMarkers = () => {
+      [rtElement0, rtElement1].forEach(element => {
+        element?.querySelectorAll('span.bullet, span.uiape-rds-flag-marker').forEach(marker => marker.remove());
+      });
+    };
+
+    if (mode === "NONE") {
+        removeExistingMarkers();
         return;
     }
 
@@ -6040,29 +6392,47 @@ function handle_RDS_FLAG_INDICATOR(event) {
     if (now - uiapeRdsFlagLastProcessedTime < UIAPE_RDS_FLAG_TIMEOUT_DURATION) return;
     uiapeRdsFlagLastProcessedTime = now;
 
-    const { rt_flag } = JSON.parse(event.data);
-    const bullet = document.createElement('span');
-
-    if (rtElement0 && rtElement0.querySelector('span.bullet')) rtElement0.removeChild(rtElement0.querySelector('span.bullet'));
-    if (rtElement1 && rtElement1.querySelector('span.bullet')) rtElement1.removeChild(rtElement1.querySelector('span.bullet'));
-
-    bullet.classList.add('bullet');
-    bullet.textContent = '\u2022 ';
-    bullet.style.position = 'absolute';
-    bullet.style.marginLeft = '-18px';
+    let parsedMessage;
+    try {
+      parsedMessage = JSON.parse(event.data);
+    } catch (error) {
+      return;
+    }
+    const { rt_flag } = parsedMessage;
+    removeExistingMarkers();
 
     if (rtElement0) rtElement0.style.position = 'relative';
     if (rtElement1) rtElement1.style.position = 'relative';
 
-    function updateBulletPoint(rt_flag) {
-      if (rt_flag === 0 && rtElement0) {
-        rtElement0.insertBefore(bullet, rtElement0.firstChild);
-      } else if (rt_flag === 1 && rtElement1) {
-        rtElement1.insertBefore(bullet, rtElement1.firstChild);
+    function addRdsFlagMarker(target, text, isAbLabel) {
+      if (!target) return;
+
+      const marker = document.createElement('span');
+      marker.className = 'uiape-rds-flag-marker';
+      marker.textContent = text;
+      if (!isAbLabel) marker.classList.add('bullet');
+      marker.style.position = 'absolute';
+      // Same anchoring as the original working bullet implementation: the
+      // marker is inserted before the RadioText and nudged left from that text.
+      marker.style.marginLeft = isAbLabel ? '-24px' : '-18px';
+      marker.style.fontSize = 'inherit';
+      marker.style.lineHeight = 'inherit';
+      marker.style.fontWeight = isAbLabel ? '700' : 'inherit';
+      marker.style.color = 'inherit';
+      marker.style.whiteSpace = 'nowrap';
+      target.insertBefore(marker, target.firstChild);
+    }
+
+    function updateRdsFlagMarker(activeFlag) {
+      const target = activeFlag === 0 ? rtElement0 : activeFlag === 1 ? rtElement1 : null;
+      if (mode === 'AB') {
+        addRdsFlagMarker(target, `${activeFlag === 0 ? 'A' : 'B'}:`, true);
+      } else {
+        addRdsFlagMarker(target, '\u2022', false);
       }
     }
 
-    if (uiapeRdsFlagDomReady) updateBulletPoint(rt_flag);
+    if (uiapeRdsFlagDomReady) updateRdsFlagMarker(rt_flag);
 }
 
 uiapeConnectRdsFlagWebSocket();
@@ -6243,7 +6613,8 @@ function addRandomIcon(result) {
     const cfg = getUiapPanelConfig();
 
     // Check if RDS_ICON_STYLE mode is active
-    const isRdsStyleMode = !!document.querySelector('#signalPanel #signal-icons');
+    const customIconScope = document.querySelector('#signalPanel #signal-icons') || document.querySelector('.uiape-visualeq-row-host');
+    const isRdsStyleMode = !!customIconScope;
 
     // Map icon names to their element IDs/selectors
     const iconIdMap = {
@@ -6260,7 +6631,7 @@ function addRandomIcon(result) {
     const attachToId = iconIdMap[String(cfg.MULTIPATH_ATTACH_TO || 'STEREO').toUpperCase()] || '#stereoIcon';
 
     const targetSpan = isRdsStyleMode
-        ? document.querySelector(`#signalPanel #signal-icons ${attachToId}`)
+        ? customIconScope.querySelector(attachToId)
         : document.querySelector('.wrapper-outer #wrapper .flex-container .flex-container #flags-container-desktop.panel-33.user-select-none span.pointer.stereo-container');
 
   if (targetSpan) {
@@ -6275,8 +6646,8 @@ function addRandomIcon(result) {
     const iconSpan = document.createElement('span');
     iconSpan.classList.add('multipath-container');
     //if (!cfg.METRICS_MONITOR_PLUGIN_IS_INSTALLED) {
-        iconSpan.style.marginLeft = `${!uiapeIsVisualEqActive(cfg) && (cfg.RDS_ICON_STYLE || isRdsStyleMode) ? cfg.MULTIPATH_LEFT_PADDING : 8}px`;
-        iconSpan.style.marginTop = `${!uiapeIsVisualEqActive(cfg) && (cfg.RDS_ICON_STYLE || isRdsStyleMode) ? 0 : 2}px`;
+        iconSpan.style.marginLeft = `${(cfg.RDS_ICON_STYLE || isRdsStyleMode) ? cfg.MULTIPATH_LEFT_PADDING : 8}px`;
+        iconSpan.style.marginTop = `${(cfg.RDS_ICON_STYLE || isRdsStyleMode) ? 0 : 2}px`;
     //}
     iconSpan.style.verticalAlign = 'middle';
     iconSpan.style.fontSize = '16px';
@@ -6399,6 +6770,19 @@ function uiapeFormatMultipathSignal(dbfValue) {
     }
 
     targetSpan.parentNode.insertBefore(iconSpan, targetSpan.nextSibling);
+
+    // Use the icon's actual rendered colour after CSS variables have resolved.
+    // This keeps default, auto and custom glow exactly aligned with the icon.
+    if (result && cfg.LED_GLOW_EFFECT_MULTIPATH && showMultipathIcon) {
+      const renderedColor = normalizeHexColor(getComputedStyle(iconElement).color, "#FFFFFF");
+      const glowRgb = uiapeHexToRgb(renderedColor);
+      iconElement.style.filter =
+        `drop-shadow(0 0 3px rgba(${glowRgb.r}, ${glowRgb.g}, ${glowRgb.b}, 0.6)) ` +
+        `drop-shadow(0 0 6px rgba(${glowRgb.r}, ${glowRgb.g}, ${glowRgb.b}, 0.4)) ` +
+        `drop-shadow(0 0 9px rgba(${glowRgb.r}, ${glowRgb.g}, ${glowRgb.b}, 0.3))`;
+    } else {
+      iconElement.style.filter = "none";
+    }
 
     if (typeof initTooltipsMultipath === 'function') initTooltipsMultipath();
   } else {
@@ -7004,7 +7388,7 @@ style.innerHTML = `
   box-sizing: border-box;
 }
 
-#signal-icons img.status-icon {
+:is(#signal-icons, .uiape-visualeq-row-host) img.status-icon {
   height: 14px;
   width: auto;
   display: block;
@@ -7013,17 +7397,17 @@ style.innerHTML = `
   pointer-events: none;
 }
 
-#signal-icons .multipath-container {
+:is(#signal-icons, .uiape-visualeq-row-host) .multipath-container {
   position: relative;
   cursor: pointer;
   pointer-events: auto;
 }
 
-#signalPanel.compact-meters #signal-icons img.status-icon {
+#signalPanel.compact-meters :is(#signal-icons, .uiape-visualeq-row-host) img.status-icon {
   height: 10px;
 }
 
-#signal-icons #stereoIcon {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7033,27 +7417,27 @@ style.innerHTML = `
   transform-origin: center;
 }
 
-#signal-icons #stereoIcon .circle-container {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon .circle-container {
   display: flex;
   gap: 2px;
 }
 
-#signal-icons #stereoIcon.stereo-off .circle-container .circle,
-#signal-icons #stereoIcon.stereo-off .circle-container {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-off .circle-container .circle,
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.stereo-off .circle-container {
   box-shadow: none;
   background-color: inherit;
 }
 
-#signal-icons .tooltip {
+:is(#signal-icons, .uiape-visualeq-row-host) .tooltip {
   position: relative;
   cursor: pointer;
 }
 
 /* Metrics Monitor renders its own CSS tooltip for any .tooltip in #signal-icons, which would
    show alongside the webserver's */
-#signal-icons #stereoIcon.tooltip::after,
-#signal-icons #ptyLabel.tooltip::after,
-#signal-icons .multipath-container.tooltip::after {
+:is(#signal-icons, .uiape-visualeq-row-host) #stereoIcon.tooltip::after,
+:is(#signal-icons, .uiape-visualeq-row-host) #ptyLabel.tooltip::after,
+:is(#signal-icons, .uiape-visualeq-row-host) .multipath-container.tooltip::after {
   display: none !important;
 }
 
@@ -7081,6 +7465,16 @@ style.innerHTML = `
   opacity: 0.9;
   box-sizing: border-box;
 }
+
+/* MetricsHeader adds negative margins when multipath appears. Configured UIAPE
+   rows already own spacing, so those offsets must not collapse their gaps. */
+:is(#signal-icons[data-uiape-metrics-rows="1"], .uiape-visualeq-row-host[data-uiape-metrics-rows="1"]) #stereoIcon,
+:is(#signal-icons[data-uiape-metrics-rows="1"], .uiape-visualeq-row-host[data-uiape-metrics-rows="1"]) #ptyLabel,
+:is(#signal-icons[data-uiape-metrics-rows="1"], .uiape-visualeq-row-host[data-uiape-metrics-rows="1"]) #tpIcon,
+:is(#signal-icons[data-uiape-metrics-rows="1"], .uiape-visualeq-row-host[data-uiape-metrics-rows="1"]) #taIcon,
+:is(#signal-icons[data-uiape-metrics-rows="1"], .uiape-visualeq-row-host[data-uiape-metrics-rows="1"]) #rdsIcon {
+  margin-left: 0 !important;
+}
 `;
 // Before the live style element so live-toggle rules can still override these static ones.
 document.head.insertBefore(style, uiapeLiveStyleElement || uiapeStyleAnchor);
@@ -7100,6 +7494,25 @@ uiapeConfigPanelSignalHardeningStyle.textContent = `
   #signalPanel.uiape-config-host #uiape-config-gear {
     transform: none !important;
     z-index: 899 !important;
+    touch-action: manipulation;
+  }
+  #signalPanel #signal-icons[data-uiape-metrics-rows="1"] {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  @media (max-width: 768px) and (orientation: portrait) {
+    #signalPanel #signal-icons[data-uiape-metrics-rows="1"] {
+      left: 10px !important;
+      right: 10px !important;
+      width: auto !important;
+      justify-content: flex-start !important;
+    }
+    #signalPanel.uiape-config-host > #uiape-config-gear {
+      width: 32px !important;
+      height: 32px !important;
+      right: 2px !important;
+      top: 2px !important;
+    }
   }
   #uiape-config-panel {
     transform: none !important;
@@ -7192,7 +7605,49 @@ const WEBSOCKET_URL  = `${protocol}//${WebserverURL}:${WebserverPORT}${Webserver
 // --------------------------------------------------------------
 //
 let TextSocket;
+let uiapeTextSocketReconnectTimer = null;
+
+function uiapeScheduleTextSocketReconnect() {
+  if (uiapeTextSocketReconnectTimer) return;
+  uiapeTextSocketReconnectTimer = setTimeout(() => {
+    uiapeTextSocketReconnectTimer = null;
+    setupTextSocket();
+  }, 5000);
+}
+
+function uiapeDetachTextSocket() {
+  if (!TextSocket) return;
+  TextSocket.removeEventListener("open", uiapeHandleTextSocketOpen);
+  TextSocket.removeEventListener("message", uiapeHandleTextSocketMessage);
+  TextSocket.removeEventListener("error", uiapeHandleTextSocketError);
+  TextSocket.removeEventListener("close", uiapeHandleTextSocketClose);
+  TextSocket = null;
+}
+
+function uiapeHandleTextSocketOpen() { logInfo("TextSocket connected."); }
+function uiapeHandleTextSocketMessage(event) {
+  try { handleTextSocketMessage(JSON.parse(event.data)); } catch (error) {}
+}
+function uiapeHandleTextSocketError(error) { logError("TextSocket error:", error); }
+function uiapeHandleTextSocketClose() {
+  setTimeout(() => logInfo("TextSocket closed."), 800);
+  uiapeDetachTextSocket();
+  uiapeScheduleTextSocketReconnect();
+}
 let levels = { hf: 0 };
+// Metrics Monitor owns the B0/B1/B2 click command on its original image node.
+// UIAPE keeps that node alive out of the visual flow and renders its own native
+// stereo-container in the configured rows.
+let uiapeMetricsStereoControl = null;
+let uiapeMetricsOriginalHeaderNodes = null;
+let uiapeMetricsStereoOriginalParent = null;
+let uiapeMetricsStereoOriginalNext = null;
+let uiapeMetricsStereoOriginalCssText = '';
+// VisualEQ keeps these exact native row elements and positions/scales them around PS.
+// UIAPE only replaces their children after VisualEQ has completed that layout.
+let uiapeVisualEqTopOriginalNodes = null;
+let uiapeVisualEqBottomOriginalNodes = null;
+let uiapeVisualEqInstallTimer = null;
 
 const PTY_TABLE = [
   "PTY", "News", "Current Affairs", "Info",
@@ -7464,35 +7919,21 @@ const off_opacity = REDUCE_HALF_OPACITY === true ? '0.6' : '0.9';
 async function setupTextSocket() {
   if (TextSocket && TextSocket.readyState !== WebSocket.CLOSED) {
     return;
-  } else {
-      setTimeout(setupTextSocket, 10000);
   }
 
   try {
-    TextSocket = await window.socket;
-
-    TextSocket.addEventListener("open", () => {
-      logInfo("TextSocket connected.");
-    });
-
-    TextSocket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      handleTextSocketMessage(message);
-    });
-
-    TextSocket.addEventListener("error", (error) => {
-      logError("TextSocket error:", error);
-    });
-
-    TextSocket.addEventListener("close", () => {
-      setTimeout(() => {
-          logInfo("TextSocket closed.");
-      }, 800);
-      setTimeout(setupTextSocket, 5000);
-    });
+    const socket = await window.socket;
+    if (!socket || typeof socket.addEventListener !== 'function') throw new Error('WebSocket unavailable');
+    if (TextSocket === socket) return;
+    uiapeDetachTextSocket();
+    TextSocket = socket;
+    TextSocket.addEventListener("open", uiapeHandleTextSocketOpen);
+    TextSocket.addEventListener("message", uiapeHandleTextSocketMessage);
+    TextSocket.addEventListener("error", uiapeHandleTextSocketError);
+    TextSocket.addEventListener("close", uiapeHandleTextSocketClose);
   } catch (error) {
     logError("Failed to setup TextSocket:", error);
-    setTimeout(setupTextSocket, 5000);
+    uiapeScheduleTextSocketReconnect();
   }
 }
 
@@ -7541,23 +7982,25 @@ function handleTextSocketMessage(message) {
   const liveRdsCfg = getUiapPanelConfig();
   const MS_INDICATOR_COLOR = liveRdsCfg.MS_INDICATOR_COLOR;
   const MS_INDICATOR_COLOR_OFF = liveRdsCfg.MS_INDICATOR_COLOR_OFF;
-  const LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS = liveRdsCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS;
+  const LED_GLOW_EFFECT_MS = liveRdsCfg.LED_GLOW_EFFECT_MS;
   const RDS_ICON_STYLE_MS_OFF_AS_LETTERS = liveRdsCfg.RDS_ICON_STYLE_MS_OFF_AS_LETTERS;
   const PTY_INDICATOR_COLOR = liveRdsCfg.PTY_INDICATOR_COLOR;
   const PTY_INDICATOR_COLOR_OFF = liveRdsCfg.PTY_INDICATOR_COLOR_OFF;
-  const LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY = liveRdsCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY;
+  const LED_GLOW_EFFECT_PTY = liveRdsCfg.LED_GLOW_EFFECT_PTY;
   const REDUCE_HALF_OPACITY = liveRdsCfg.REDUCE_HALF_OPACITY;
   const off_opacity = REDUCE_HALF_OPACITY === true ? '0.6' : '0.9';
   const RDS_INDICATOR_ICON_COLOR = liveRdsCfg.RDS_INDICATOR_ICON_COLOR;
   const RDS_INDICATOR_ICON_COLOR_OFF = liveRdsCfg.RDS_INDICATOR_ICON_COLOR_OFF;
-  const LED_GLOW_EFFECT_ICONS = liveRdsCfg.LED_GLOW_EFFECT_ICONS;
+  const LED_GLOW_EFFECT_RDS = liveRdsCfg.LED_GLOW_EFFECT_RDS;
+  const LED_GLOW_EFFECT_TP_TA = liveRdsCfg.LED_GLOW_EFFECT_TP_TA;
+  const LED_GLOW_EFFECT_STEREO_MPX = liveRdsCfg.LED_GLOW_EFFECT_STEREO_MPX;
   const RDS_INDICATOR_ICON_GLOW_INTENSITY = liveRdsCfg.RDS_INDICATOR_ICON_GLOW_INTENSITY;
   const TP_INDICATOR_ICON_COLOR = liveRdsCfg.TP_INDICATOR_ICON_COLOR;
   const TP_INDICATOR_ICON_COLOR_OFF = liveRdsCfg.TP_INDICATOR_ICON_COLOR_OFF;
   const TA_INDICATOR_ICON_COLOR = liveRdsCfg.TA_INDICATOR_ICON_COLOR;
   const TA_INDICATOR_ICON_COLOR_OFF = liveRdsCfg.TA_INDICATOR_ICON_COLOR_OFF;
   const BANDWIDTH_UPDATE_INTERVAL = liveRdsCfg.BANDWIDTH_UPDATE_INTERVAL;
-  const LED_GLOW_EFFECT_ICONS_BANDWIDTH = liveRdsCfg.LED_GLOW_EFFECT_ICONS_BANDWIDTH;
+  const LED_GLOW_EFFECT_BW = liveRdsCfg.LED_GLOW_EFFECT_BW;
   const BW_INDICATOR_COLOR = liveRdsCfg.BW_INDICATOR_COLOR;
   const BW_INDICATOR_COLOR_OFF = liveRdsCfg.BW_INDICATOR_COLOR_OFF;
   const ECC_INDICATOR_COLOR_OFF = liveRdsCfg.ECC_INDICATOR_COLOR_OFF;
@@ -7588,11 +8031,11 @@ function handleTextSocketMessage(message) {
 
       if (message.ms === 0) {
         ptyIcon.innerHTML = `<i class="fa-solid fa-microphone" style="position: relative; top: ${isFirefox ? '0' : '1'}px; min-width: 12px;"></i>`;
-        applyTextIndicatorColor(ptyIcon, true, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS);
+        applyTextIndicatorColor(ptyIcon, true, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_MS);
         ptyIcon.style.opacity = "0.9";
       } else if (message.ms === 1) {
         ptyIcon.innerHTML = `<i class="fa-solid fa-music" style="position: relative; top: ${isFirefox ? '0' : '1'}px; min-width: 12px;"></i>`;
-        applyTextIndicatorColor(ptyIcon, true, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS);
+        applyTextIndicatorColor(ptyIcon, true, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_MS);
         ptyIcon.style.opacity = "0.9";
       } else {
         if (ptyText === "PTY") {
@@ -7613,18 +8056,18 @@ function handleTextSocketMessage(message) {
             </span>`;
         }
         ptyIcon.style.border = "1px solid #696969";
-        applyTextIndicatorColor(ptyIcon, false, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS);
+        applyTextIndicatorColor(ptyIcon, false, MS_INDICATOR_COLOR, MS_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_MS);
         ptyIcon.style.opacity = off_opacity;
       }
 
       // PTY label styling
       if (ptyText === "PTY") {
-        applyTextIndicatorColor(ptyLabel, false, PTY_INDICATOR_COLOR, PTY_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY);
+        applyTextIndicatorColor(ptyLabel, false, PTY_INDICATOR_COLOR, PTY_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_PTY);
         ptyLabel.style.fontWeight = "bold";
         ptyLabel.dataset.uiapeDesiredFontWeight = ptyLabel.style.fontWeight;
         ptyLabel.style.opacity = off_opacity;
       } else {
-        applyTextIndicatorColor(ptyLabel, true, PTY_INDICATOR_COLOR, PTY_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY);
+        applyTextIndicatorColor(ptyLabel, true, PTY_INDICATOR_COLOR, PTY_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_PTY);
         ptyLabel.style.fontWeight = "600";
         ptyLabel.dataset.uiapeDesiredFontWeight = ptyLabel.style.fontWeight;
         ptyLabel.style.opacity = '1';
@@ -7682,6 +8125,30 @@ function handleTextSocketMessage(message) {
     // The glow observer doesn't watch this clone
     if (stereoWasOff !== stereoIcon.classList.contains('stereo-off') && uiapeApplyStereoGlowFn) {
       uiapeApplyStereoGlowFn();
+    }
+
+    // MetricsHeader writes the selected state to data-current-src on the slot.
+    // Render MPX with UIAPE's native framed-label treatment; the original IMG
+    // remains hidden in the slot only to preserve MetricsHeader's click handler.
+    if (stereoIcon.dataset.uiapeMetricsStereoSlot === '1') {
+      const metricsSource = String(stereoIcon.dataset.currentSrc || '').toLowerCase();
+      const metricsMpxLabel = stereoIcon.querySelector('[data-uiape-metrics-mpx-label="1"]');
+      const uiapeStereo = stereoIcon.querySelector(':scope > .stereo-container');
+      const showMpx = metricsSource.includes('mpx_') &&
+        liveRdsCfg.REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN !== true;
+
+      if (metricsMpxLabel) {
+        metricsMpxLabel.style.display = showMpx ? 'inline-flex' : 'none';
+        applyTextIndicatorColor(
+          metricsMpxLabel,
+          metricsSource.includes('mpx_on'),
+          liveRdsCfg.STEREO_ICON_COLOR === 'default' ? '' : liveRdsCfg.STEREO_ICON_COLOR,
+          liveRdsCfg.STEREO_ICON_COLOR_OFF,
+          liveRdsCfg.LED_GLOW_EFFECT_STEREO_MPX
+        );
+        metricsMpxLabel.style.opacity = metricsSource.includes('mpx_on') ? '0.9' : off_opacity;
+      }
+      if (uiapeStereo) uiapeStereo.style.display = showMpx ? 'none' : 'inline-flex';
     }
   }
 
@@ -8115,15 +8582,16 @@ function handleTextSocketMessage(message) {
             const noEcc = document.createElement('span');
             noEcc.textContent = 'ECC';
             noEcc.style.color = noEccColor;
-            noEcc.style.fontSize = '13px';
+            noEcc.style.fontSize = `${uiapeLabelFontSizeFromHeight(uiapeResolveLiveRdsIconHeight(eccPreset, "ECC", eccPreset.PTY_HEIGHT))}px`;
             noEcc.style.fontWeight = 'bold';
             noEcc.style.border = `1px solid ${noEccColor}`;
             noEcc.style.borderRadius = "3px";
             noEcc.style.padding = '0 3px 0 3px';
             noEcc.style.display = 'inline-flex';
             noEcc.style.alignItems = 'center';
+            noEcc.style.boxSizing = 'border-box';
             noEcc.style.height = uiapeResolveLiveRdsIconHeight(eccPreset, "ECC", eccPreset.PTY_HEIGHT) + 'px';
-            noEcc.style.paddingBottom = isFirefox ? '1px' : '0';
+            uiapeCenterFramedTextLabel(noEcc);
             if (reduceHalfOpacity) noEcc.style.opacity = offOpacity;
             eccWrapper.appendChild(noEcc);
         }
@@ -8157,11 +8625,12 @@ function handleTextSocketMessage(message) {
     function uiapeReapplyIndicatorColors() {
         const liveCfg = getUiapPanelConfig();
         const targets = [
-            ['ptyIconOverlay', liveCfg.MS_INDICATOR_COLOR, liveCfg.MS_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_MS],
-            ['ptyLabel', liveCfg.PTY_INDICATOR_COLOR, liveCfg.PTY_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_ICONS_RDS_ICON_STYLE_PTY],
-            ['tpIcon', liveCfg.TP_INDICATOR_ICON_COLOR, liveCfg.TP_INDICATOR_ICON_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_ICONS],
-            ['taIcon', liveCfg.TA_INDICATOR_ICON_COLOR, liveCfg.TA_INDICATOR_ICON_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_ICONS],
-            ['bwLabel', liveCfg.BW_INDICATOR_COLOR, liveCfg.BW_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_ICONS_BANDWIDTH]
+            ['uiapeMetricsMpxLabel', liveCfg.STEREO_ICON_COLOR === 'default' ? '' : liveCfg.STEREO_ICON_COLOR, liveCfg.STEREO_ICON_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_STEREO_MPX],
+            ['ptyIconOverlay', liveCfg.MS_INDICATOR_COLOR, liveCfg.MS_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_MS],
+            ['ptyLabel', liveCfg.PTY_INDICATOR_COLOR, liveCfg.PTY_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_PTY],
+            ['tpIcon', liveCfg.TP_INDICATOR_ICON_COLOR, liveCfg.TP_INDICATOR_ICON_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_TP_TA],
+            ['taIcon', liveCfg.TA_INDICATOR_ICON_COLOR, liveCfg.TA_INDICATOR_ICON_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_TP_TA],
+            ['bwLabel', liveCfg.BW_INDICATOR_COLOR, liveCfg.BW_INDICATOR_COLOR_OFF, liveCfg.LED_GLOW_EFFECT_BW]
         ];
         targets.forEach(([id, activeColor, offColor, glow]) => {
             const icon = document.getElementById(id);
@@ -8185,7 +8654,7 @@ function handleTextSocketMessage(message) {
             if (activeColor) {
                 rdsIcon.style.filter = colorToFilter(
                     activeColor,
-                    LED_GLOW_EFFECT_ICONS,
+                    LED_GLOW_EFFECT_RDS,
                     RDS_INDICATOR_ICON_GLOW_INTENSITY
                 );
             } else if (offColor) {
@@ -8209,7 +8678,7 @@ function handleTextSocketMessage(message) {
     if (message.rds === true) {
       rdsIcon.src = uiapeGetRdsIconWebp(true);
       rdsIcon.style.opacity = '0.9';
-      if (LED_GLOW_EFFECT_ICONS) rdsIcon.classList.add('icon-glow-on');
+      if (LED_GLOW_EFFECT_RDS) rdsIcon.classList.add('icon-glow-on');
       applyRdsIndicatorColor(rdsIcon, true);
     } else {
       rdsIcon.src = uiapeGetRdsIconWebp(false);
@@ -8218,8 +8687,7 @@ function handleTextSocketMessage(message) {
       applyRdsIndicatorColor(rdsIcon, false);
     }
 
-    if (!rdsIcon.dataset.uiapeThemeObserver) {
-      rdsIcon.dataset.uiapeThemeObserver = "1";
+    if (!rdsIcon._uiapeThemeObserver) {
       const rdsThemeObserver = new MutationObserver(() => {
         applyRdsIndicatorColor(
           rdsIcon,
@@ -8227,6 +8695,7 @@ function handleTextSocketMessage(message) {
         );
       });
       rdsThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+      rdsIcon._uiapeThemeObserver = rdsThemeObserver;
     }
   }
 
@@ -8234,7 +8703,7 @@ function handleTextSocketMessage(message) {
   const tpIcon = document.getElementById('tpIcon');
   if (tpIcon) {
     const tpOn = message.tp === 1;
-    if (LED_GLOW_EFFECT_ICONS && tpOn) {
+    if (LED_GLOW_EFFECT_TP_TA && tpOn) {
       tpIcon.classList.add('icon-glow-on');
       if (REDUCE_HALF_OPACITY) tpIcon.style.opacity = '0.9';
     } else {
@@ -8245,14 +8714,14 @@ function handleTextSocketMessage(message) {
           tpIcon.style.opacity = '0.9';
       }
     }
-    applyTextIndicatorColor(tpIcon, tpOn, TP_INDICATOR_ICON_COLOR, TP_INDICATOR_ICON_COLOR_OFF, LED_GLOW_EFFECT_ICONS);
+    applyTextIndicatorColor(tpIcon, tpOn, TP_INDICATOR_ICON_COLOR, TP_INDICATOR_ICON_COLOR_OFF, LED_GLOW_EFFECT_TP_TA);
   }
 
   // --- TA ---
   const taIcon = document.getElementById('taIcon');
   if (taIcon) {
     const taOn = message.ta === 1;
-    if (LED_GLOW_EFFECT_ICONS && taOn) {
+    if (LED_GLOW_EFFECT_TP_TA && taOn) {
       taIcon.classList.add('icon-glow-on');
       if (REDUCE_HALF_OPACITY) taIcon.style.opacity = '0.9';
     } else {
@@ -8263,7 +8732,7 @@ function handleTextSocketMessage(message) {
           taIcon.style.opacity = '0.9';
       }
     }
-    applyTextIndicatorColor(taIcon, taOn, TA_INDICATOR_ICON_COLOR, TA_INDICATOR_ICON_COLOR_OFF, LED_GLOW_EFFECT_ICONS);
+    applyTextIndicatorColor(taIcon, taOn, TA_INDICATOR_ICON_COLOR, TA_INDICATOR_ICON_COLOR_OFF, LED_GLOW_EFFECT_TP_TA);
   }
 
   // --- BW (Bandwidth) ---
@@ -8290,7 +8759,7 @@ function handleTextSocketMessage(message) {
     bwLabel.textContent = sigValue;
 
     const bwOn = sigValue > 64;
-    applyTextIndicatorColor(bwLabel, bwOn, BW_INDICATOR_COLOR, BW_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_ICONS_BANDWIDTH);
+    applyTextIndicatorColor(bwLabel, bwOn, BW_INDICATOR_COLOR, BW_INDICATOR_COLOR_OFF, LED_GLOW_EFFECT_BW);
     if (bwOn) {
         bwLabel.style.fontWeight = "600";
         bwLabel.style.opacity = '0.9';
@@ -8308,7 +8777,7 @@ function handleTextSocketMessage(message) {
   const stereoIconPlugin = document.getElementById('stereoIcon');
   if (stereoIconPlugin) {
     const stOn = (message.st && !message.stForced) || (message.rds && stereoIconPlugin.getAttribute('data-current-src')?.includes('mpx_on'));
-    if (LED_GLOW_EFFECT_ICONS && stOn) {
+    if (LED_GLOW_EFFECT_STEREO_MPX && stOn) {
       stereoIconPlugin.classList.add('icon-glow-on');
       if (REDUCE_HALF_OPACITY) stereoIconPlugin.style.opacity = '0.9';
     } else {
@@ -8336,7 +8805,7 @@ function createIconElement(iconType, preset) {
       ptyLabel.id = 'ptyLabel';
       ptyLabel.textContent = 'PTY';
       ptyLabel.style.color = '#696969';
-      ptyLabel.style.fontSize = '14px';
+      ptyLabel.style.fontSize = `${uiapeLabelFontSizeFromHeight(preset.PTY_HEIGHT)}px`;
       ptyLabel.style.fontWeight = 'bold';
       ptyLabel.style.border = '1px solid #696969';
       ptyLabel.style.borderRadius = '3px';
@@ -8344,6 +8813,7 @@ function createIconElement(iconType, preset) {
       ptyLabel.style.display = 'inline-flex';
       ptyLabel.style.alignItems = 'center';
       ptyLabel.style.justifyContent = 'center';
+      ptyLabel.style.boxSizing = 'border-box';
       ptyLabel.style.paddingBottom = isFirefox ? '2px' : '1px'; // Firefox
       ptyLabel.style.height = preset.PTY_HEIGHT + 'px';
       if (REDUCE_HALF_OPACITY) ptyLabel.style.opacity = off_opacity;
@@ -8354,7 +8824,7 @@ function createIconElement(iconType, preset) {
       bwLabel.id = 'bwLabel';
       bwLabel.textContent = 'BW';
       bwLabel.style.color = '#696969';
-      bwLabel.style.fontSize = '16px';
+      bwLabel.style.fontSize = `${uiapeLabelFontSizeFromHeight(preset.PTY_HEIGHT)}px`;
       bwLabel.style.fontWeight = 'bold';
       bwLabel.style.border = '0px solid #696969';
       bwLabel.style.borderRadius = '3px';
@@ -8363,6 +8833,7 @@ function createIconElement(iconType, preset) {
       bwLabel.style.display = 'inline-flex';
       bwLabel.style.alignItems = 'center';
       bwLabel.style.justifyContent = 'right';
+      bwLabel.style.boxSizing = 'border-box';
       bwLabel.style.paddingBottom = isFirefox ? '1px' : '1px'; // Firefox
       bwLabel.style.height = preset.PTY_HEIGHT + 'px';
       if (REDUCE_HALF_OPACITY) bwLabel.style.opacity = off_opacity;
@@ -8373,7 +8844,7 @@ function createIconElement(iconType, preset) {
       const msIcon = document.createElement('span');
       msIcon.id = 'ptyIconOverlay';
       msIcon.style.color = "#fff";
-      msIcon.style.fontSize = "12px";
+      msIcon.style.fontSize = `${uiapeLabelFontSizeFromHeight(uiapeResolveLiveRdsIconHeight(preset, "MS", preset.PTY_HEIGHT))}px`;
       msIcon.style.lineHeight = "1.4";
       msIcon.style.border = "1px solid #696969";
       msIcon.style.borderRadius = "3px";
@@ -8382,6 +8853,7 @@ function createIconElement(iconType, preset) {
       msIcon.style.display = "inline-flex";
       msIcon.style.alignItems = "center";
       msIcon.style.justifyContent = "center";
+      msIcon.style.boxSizing = "border-box";
       msIcon.style.height = uiapeResolveLiveRdsIconHeight(preset, "MS", preset.PTY_HEIGHT) + "px";
       msIcon.style.minWidth = "30px";
       // Initial state, question mark
@@ -8410,15 +8882,16 @@ function createIconElement(iconType, preset) {
         const noEcc = document.createElement('span');
         noEcc.textContent = 'ECC';
         noEcc.style.color = noEccColor;
-        noEcc.style.fontSize = '13px';
+        noEcc.style.fontSize = `${uiapeLabelFontSizeFromHeight(uiapeResolveLiveRdsIconHeight(preset, "ECC", preset.PTY_HEIGHT))}px`;
         noEcc.style.fontWeight = 'bold';
         noEcc.style.border = `1px solid ${noEccColor}`;
         noEcc.style.borderRadius = "3px";
         noEcc.style.padding = '0 3px 0 3px';
         noEcc.style.display = 'inline-flex';
         noEcc.style.alignItems = 'center';
+        noEcc.style.boxSizing = 'border-box';
         noEcc.style.height = uiapeResolveLiveRdsIconHeight(preset, "ECC", preset.PTY_HEIGHT) + 'px';
-        noEcc.style.paddingBottom = isFirefox ? '1px' : '0';
+        uiapeCenterFramedTextLabel(noEcc);
         if (REDUCE_HALF_OPACITY) noEcc.style.opacity = off_opacity;
         eccWrapper.appendChild(noEcc);
       }
@@ -8428,16 +8901,58 @@ function createIconElement(iconType, preset) {
       const stereoSource = document.querySelector('.stereo-container');
       if (stereoSource) {
         const stereoClone = stereoSource.cloneNode(true);
-        stereoClone.id = 'stereoIcon';
         stereoClone.removeAttribute('style');
         stereoClone.classList.add("tooltip");
         stereoClone.setAttribute("data-tooltip", "Stereo / Mono toggle.<br><strong>Click to toggle.</strong>");
-        {
-          const spacingCfg = uiapeGetHorizontalSpacingConfig(preset);
-          stereoClone.style.marginRight = spacingCfg.mode === "PRESET"
-            ? preset.STEREO_ICON_SPACING + 'px'
-            : '0px';
+        stereoClone.style.setProperty('margin-right', `${Math.max(0, Number(preset.STEREO_ICON_SPACING) || 0)}px`, 'important');
+        if (getUiapPanelConfig().METRICS_MONITOR_PLUGIN_IS_INSTALLED && uiapeMetricsStereoControl) {
+          const stereoSlot = document.createElement('span');
+          stereoSlot.id = 'stereoIcon';
+          stereoSlot.dataset.uiapeMetricsStereoSlot = '1';
+          stereoSlot.className = 'tooltip stereo-off';
+          stereoSlot.style.display = 'inline-flex';
+          stereoSlot.style.alignItems = 'center';
+          stereoSlot.style.justifyContent = 'center';
+          stereoSlot.style.fontSize = 'inherit';
+          stereoSlot.style.setProperty('margin-right', `${Math.max(0, Number(preset.STEREO_ICON_SPACING) || 0)}px`, 'important');
+          stereoClone.style.marginRight = '0';
+
+          const mpxLabel = document.createElement('span');
+          mpxLabel.id = 'uiapeMetricsMpxLabel';
+          mpxLabel.dataset.uiapeMetricsMpxLabel = '1';
+          mpxLabel.textContent = 'MPX';
+          mpxLabel.style.color = '#696969';
+          mpxLabel.style.fontSize = `${uiapeLabelFontSizeFromHeight(preset.PTY_HEIGHT)}px`;
+          mpxLabel.style.fontWeight = 'bold';
+          mpxLabel.style.border = '1px solid #696969';
+          mpxLabel.style.borderRadius = '3px';
+          mpxLabel.style.padding = '0 2px';
+          mpxLabel.style.display = 'inline-flex';
+          mpxLabel.style.alignItems = 'center';
+          mpxLabel.style.justifyContent = 'center';
+          mpxLabel.style.boxSizing = 'border-box';
+          mpxLabel.style.height = preset.PTY_HEIGHT + 'px';
+          uiapeCenterFramedTextLabel(mpxLabel);
+          if (REDUCE_HALF_OPACITY) mpxLabel.style.opacity = off_opacity;
+
+          uiapeMetricsStereoControl.style.display = 'none';
+          const initialSource = String(uiapeMetricsStereoControl.dataset.currentSrc || uiapeMetricsStereoControl.src || '').toLowerCase();
+          const initiallyMpx = initialSource.includes('mpx_') &&
+            getUiapPanelConfig().REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN !== true;
+          mpxLabel.style.display = initiallyMpx ? 'inline-flex' : 'none';
+          stereoClone.style.display = initiallyMpx ? 'none' : 'inline-flex';
+
+          stereoSlot.appendChild(stereoClone);
+          stereoSlot.appendChild(mpxLabel);
+          stereoSlot.appendChild(uiapeMetricsStereoControl);
+          stereoSlot.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (event.target !== uiapeMetricsStereoControl) uiapeMetricsStereoControl.click();
+          });
+          return stereoSlot;
         }
+        stereoClone.id = 'stereoIcon';
         return stereoClone;
       }
       return null;
@@ -8447,7 +8962,7 @@ function createIconElement(iconType, preset) {
       tpLabel.id = 'tpIcon';
       tpLabel.textContent = 'TP';
       tpLabel.style.color = '#696969';
-      tpLabel.style.fontSize = '13px';
+      tpLabel.style.fontSize = `${uiapeLabelFontSizeFromHeight(uiapeResolveLiveRdsIconHeight(preset, "TP", preset.PTY_HEIGHT))}px`;
       tpLabel.style.fontWeight = 'bold';
       tpLabel.style.border = '1px solid #696969';
       tpLabel.style.borderRadius = '3px';
@@ -8458,7 +8973,7 @@ function createIconElement(iconType, preset) {
       tpLabel.style.height = uiapeResolveLiveRdsIconHeight(preset, "TP", preset.PTY_HEIGHT) + 'px';
       tpLabel.style.boxSizing = 'border-box';
       tpLabel.style.minWidth = '30px';
-      tpLabel.style.paddingBottom = isFirefox ? '1px' : '0';
+      uiapeCenterFramedTextLabel(tpLabel);
       if (REDUCE_HALF_OPACITY) tpLabel.style.opacity = off_opacity;
       return tpLabel;
     }
@@ -8468,7 +8983,7 @@ function createIconElement(iconType, preset) {
       taLabel.id = 'taIcon';
       taLabel.textContent = 'TA';
       taLabel.style.color = '#696969';
-      taLabel.style.fontSize = '13px';
+      taLabel.style.fontSize = `${uiapeLabelFontSizeFromHeight(uiapeResolveLiveRdsIconHeight(preset, "TA", preset.PTY_HEIGHT))}px`;
       taLabel.style.fontWeight = 'bold';
       taLabel.style.border = '1px solid #696969';
       taLabel.style.borderRadius = '3px';
@@ -8479,7 +8994,7 @@ function createIconElement(iconType, preset) {
       taLabel.style.height = uiapeResolveLiveRdsIconHeight(preset, "TA", preset.PTY_HEIGHT) + 'px';
       taLabel.style.boxSizing = 'border-box';
       taLabel.style.minWidth = '30px';
-      taLabel.style.paddingBottom = isFirefox ? '1px' : '0';
+      uiapeCenterFramedTextLabel(taLabel);
       if (REDUCE_HALF_OPACITY) taLabel.style.opacity = off_opacity;
       return taLabel;
     }
@@ -8512,6 +9027,13 @@ function uiapeGetHorizontalSpacingConfig(preset) {
   if (!Number.isFinite(autoMax)) autoMax = 14;
 
   if (autoMin > autoMax) [autoMin, autoMax] = [autoMax, autoMin];
+  // Metrics has less horizontal and vertical headroom than the native header.
+  // Compact only its global Auto/Uniform spacing; dedicated per-icon gaps stay exact.
+  if (cfg.METRICS_MONITOR_PLUGIN_IS_INSTALLED) {
+    uniform = Math.max(0, Math.round(uniform * 0.65 * 10) / 10);
+    autoMin = Math.max(1, Math.round(autoMin * 0.6 * 10) / 10);
+    autoMax = Math.max(autoMin, Math.round(autoMax * 0.65 * 10) / 10);
+  }
   return { mode, uniform, autoMin, autoMax, preset };
 }
 
@@ -8520,6 +9042,15 @@ function uiapeMeasureDirectRowItems(row) {
     const rect = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     return sum + rect.width + (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0);
+  }, 0);
+}
+
+// offsetWidth/clientWidth stay in the row's local coordinate system. This prevents
+// VisualEQ's outer scale from being counted once during measurement and again by CSS.
+function uiapeMeasureDirectRowItemsLocal(row) {
+  return Array.from(row.children).reduce((sum, el) => {
+    const cs = getComputedStyle(el);
+    return sum + el.offsetWidth + (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0);
   }, 0);
 }
 
@@ -8540,8 +9071,8 @@ function uiapeApplyAutoHorizontalSpacing(row, spacingCfg) {
       return;
     }
 
-    const rowWidth = row.getBoundingClientRect().width;
-    const contentWidth = uiapeMeasureDirectRowItems(row);
+    const rowWidth = row.clientWidth;
+    const contentWidth = uiapeMeasureDirectRowItemsLocal(row);
     const safeWidth = Math.max(0, rowWidth * 0.92);
     const rawGap = (safeWidth - contentWidth) / Math.max(items.length - 1, 1);
     const gap = Math.max(spacingCfg.autoMin, Math.min(rawGap, spacingCfg.autoMax));
@@ -8593,6 +9124,17 @@ function uiapeDisposeSignalRowObservers(root = document.getElementById("signal-i
   root.style.removeProperty('transform');
 }
 
+function uiapeDisposeIconNodeLifecycle(root) {
+  if (!root) return;
+  const nodes = [root, ...root.querySelectorAll('*')];
+  nodes.forEach(node => {
+    ['_uiapeThemeObserver', '_uiapeColorGuard', '_uiapePtyGuard', '_uiapeEccGuard', '_uiapeSignalGuard'].forEach(key => {
+      try { node[key]?.disconnect?.(); } catch (error) {}
+      node[key] = null;
+    });
+  });
+}
+
 // Keeps RDS_ICON_SCALE unless the row would clip, then shrinks only as far as needed.
 // Pixels kept clear at each end of the row. Metrics Monitor positions its bar differently,
 // so it gets its own value.
@@ -8605,7 +9147,8 @@ function uiapeApplyRdsIconAutoFit(iconsBar) {
 
   // Metrics Monitor's bar is shrink-to-fit, so it needs measuring/placing whenever a scale is
   // applied, not only for auto-fit. Enhanced's own row is width:100% and the CSS handles it.
-  const enhancedOwnsRow = !!iconsBar.querySelector('[data-uiape-icon-row="1"]');
+  const metricsUsesEnhancedRows = iconsBar.dataset.uiapeMetricsRows === "1";
+  const enhancedOwnsRow = !!iconsBar.querySelector('[data-uiape-icon-row="1"]') && !metricsUsesEnhancedRows;
   if (!cfg.RDS_ICON_SCALE_AUTO_FIT && enhancedOwnsRow) {
     // Observers keep firing otherwise, reapplying the transform right after it's removed
     if (iconsBar._uiapeAutoFitResize) { iconsBar._uiapeAutoFitResize.disconnect(); iconsBar._uiapeAutoFitResize = null; }
@@ -8620,8 +9163,14 @@ function uiapeApplyRdsIconAutoFit(iconsBar) {
     const rows = iconsBar.querySelectorAll('[data-uiape-icon-row="1"]');
     const autoFit = !!getUiapPanelConfig().RDS_ICON_SCALE_AUTO_FIT;
     if (!autoFit && rows.length) {
-      iconsBar.style.removeProperty('transform');
-      iconsBar.style.removeProperty('transform-origin');
+      if (metricsUsesEnhancedRows) {
+        // Explicit identity overrides MetricsMonitor's Firefox mobile translate(-48px).
+        iconsBar.style.transform = 'translateX(0px) scale(1)';
+        iconsBar.style.transformOrigin = 'center center';
+      } else {
+        iconsBar.style.removeProperty('transform');
+        iconsBar.style.removeProperty('transform-origin');
+      }
       return;
     }
 
@@ -8659,14 +9208,18 @@ function uiapeApplyRdsIconAutoFit(iconsBar) {
     if (!available || !needed) return;
 
     const paddingCfg = getUiapPanelConfig();
-    const paddingRaw = rows.length ? paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING : paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING_MM;
+    const paddingRaw = metricsUsesEnhancedRows
+      ? paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING_MM
+      : (rows.length ? paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING : paddingCfg.RDS_ICON_SCALE_AUTO_FIT_PADDING_MM);
     const padding = Number.isFinite(Number(paddingRaw)) ? Number(paddingRaw) : 0;
     const usable = available - (padding * 2);
     if (usable <= 0) return;
 
     // The ratio is the widest scale that still fits, not a multiplier for the configured one
     const maxFit = usable / needed;
-    const configured = Number(uiapeCssScaleValue(getUiapPanelConfig().RDS_ICON_SCALE));
+    // RDS_ICON_SCALE affects only #rdsIcon. Auto-fit begins at 100% and shrinks
+    // the complete row only when the available width actually requires it.
+    const configured = 1;
     const scale = autoFit ? Math.min(configured, maxFit) : configured;
 
     const scaleRounded = Number(scale.toFixed(4));
@@ -8681,7 +9234,7 @@ function uiapeApplyRdsIconAutoFit(iconsBar) {
 
     // Only skip when the transform would genuinely do nothing, since applying one puts the bar on
     // its own layer and rounds some icons a pixel differently
-    if (scaleRounded === 1 && offsetRounded === 0) {
+    if (scaleRounded === 1 && offsetRounded === 0 && !metricsUsesEnhancedRows) {
       if (iconsBar.style.transform) {
         iconsBar.style.removeProperty('transform');
         iconsBar.style.removeProperty('transform-origin');
@@ -8740,15 +9293,15 @@ function createIconRow(iconList, isFirstRow, preset) {
     if ((iconType === 'TP' && nextIconType === 'TA') || (iconType === 'TA' && nextIconType === 'TP')) {
       // Create a wrapper for TP-TA pair with smaller gap
       const tpTaWrapper = document.createElement('span');
+      tpTaWrapper.dataset.uiapeTpTaPair = '1';
       tpTaWrapper.style.display = 'inline-flex';
       tpTaWrapper.style.alignItems = 'center';
-      tpTaWrapper.style.gap = (
-        horizontalSpacing.mode === "PRESET"
-          ? preset.TP_TA_GAP
-          : horizontalSpacing.mode === "UNIFORM"
-            ? horizontalSpacing.uniform
-            : horizontalSpacing.autoMin
-      ) + 'px';
+      const configuredTpTaGap = Number(preset.TP_TA_GAP);
+      tpTaWrapper.style.setProperty(
+        'gap',
+        `${Number.isFinite(configuredTpTaGap) ? Math.max(0, configuredTpTaGap) : 8}px`,
+        'important'
+      );
 
       const firstIcon = createIconElement(filteredList[i], preset);
       const secondIcon = createIconElement(filteredList[i + 1], preset);
@@ -8769,11 +9322,176 @@ function createIconRow(iconList, isFirstRow, preset) {
   return row;
 }
 
+function uiapeCaptureMetricsStereoControl(iconsBar) {
+  if (!iconsBar) return;
+  if (!uiapeMetricsOriginalHeaderNodes) {
+    uiapeMetricsOriginalHeaderNodes = Array.from(iconsBar.childNodes);
+  }
+  const current = document.getElementById('stereoIcon');
+  if (current?.tagName === 'IMG') {
+    uiapeMetricsStereoControl = current;
+    uiapeMetricsStereoOriginalParent = current.parentNode;
+    uiapeMetricsStereoOriginalNext = current.nextSibling;
+    uiapeMetricsStereoOriginalCssText = current.style.cssText;
+    current.id = 'uiape-metrics-stereo-control';
+  }
+}
+
+// Uses the very same factories and preset rows as standalone UIAPE. No Metrics
+// Monitor PNG or substitute label is created here.
+function uiapePopulateConfiguredIconRows(iconsBar, preset, metricsMode = false) {
+  if (!iconsBar) return;
+
+  uiapeDisposeSignalRowObservers(iconsBar);
+  uiapeDisposeIconNodeLifecycle(iconsBar);
+  if (metricsMode) uiapeCaptureMetricsStereoControl(iconsBar);
+  iconsBar.replaceChildren();
+
+  iconsBar.dataset.uiapeMetricsRows = metricsMode ? '1' : '0';
+  iconsBar.style.display = 'flex';
+  iconsBar.style.flexDirection = 'column';
+  iconsBar.style.alignItems = 'center';
+  iconsBar.style.justifyContent = 'flex-start';
+  // This is the actual space between the two rows. GAP_ROW_1/GAP_ROW_2 remain
+  // independent per-row translations and must not collapse this breathing room.
+  iconsBar.style.gap = '4px';
+  iconsBar.style.minWidth = '0';
+
+  if (metricsMode) {
+    // Metrics Monitor keeps the icon header absolutely positioned above its meters.
+    iconsBar.style.position = 'absolute';
+    iconsBar.style.top = '-4px';
+    iconsBar.style.left = '10px';
+    iconsBar.style.right = '10px';
+    iconsBar.style.width = 'auto';
+    iconsBar.style.marginLeft = '0';
+    iconsBar.style.overflow = 'visible';
+  } else {
+    iconsBar.style.position = 'relative';
+    iconsBar.style.width = '100%';
+  }
+
+  let rowCount = 0;
+  if (Array.isArray(preset.FIRST_ROW) && preset.FIRST_ROW.length > 0) {
+    iconsBar.appendChild(createIconRow(preset.FIRST_ROW, true, preset));
+    rowCount++;
+  }
+  if (Array.isArray(preset.SECOND_ROW) && preset.SECOND_ROW.length > 0) {
+    iconsBar.appendChild(createIconRow(preset.SECOND_ROW, false, preset));
+    rowCount++;
+  }
+
+  if (metricsMode) {
+    const meters = document.getElementById('level-meter-container');
+    if (meters) meters.style.marginTop = rowCount > 1 ? '31px' : '22px';
+  }
+
+  uiapeApplyRdsIconAutoFit(iconsBar);
+}
+
+function uiapeDisposeVisualEqRow(host) {
+  if (!host) return;
+  host.querySelectorAll('[data-uiape-icon-row="1"]').forEach(uiapeDisposeAutoSpacingObserver);
+  uiapeDisposeIconNodeLifecycle(host);
+}
+
+const UIAPE_VISUALEQ_TOP_CENTER_OFFSET = 12;
+const UIAPE_VISUALEQ_BOTTOM_CENTER_OFFSET = -12;
+
+// VisualEQ owns the outer h3/h2 transforms (TP_ROW_SCALE / PTY_ROW_SCALE).
+// UIAPE stays one level inside, so VisualEQ's global row scale is applied once.
+// Auto-fit deliberately does not transform either VisualEQ host.
+function uiapePopulateVisualEqRows() {
+  const flagsContainer = document.getElementById('flags-container-desktop');
+  const visualEqPanel = document.querySelector('.panel-eq-container');
+  const topHost = flagsContainer?.querySelector(':scope > h3');
+  const bottomHost = flagsContainer?.querySelector(':scope > h2');
+  if (!visualEqPanel || !topHost || !bottomHost) return false;
+
+  if (!uiapeVisualEqTopOriginalNodes) uiapeVisualEqTopOriginalNodes = Array.from(topHost.childNodes);
+  if (!uiapeVisualEqBottomOriginalNodes) uiapeVisualEqBottomOriginalNodes = Array.from(bottomHost.childNodes);
+
+  uiapeDisposeVisualEqRow(topHost);
+  uiapeDisposeVisualEqRow(bottomHost);
+
+  const preset = uiapeGetActiveRdsPreset(getUiapPanelConfig());
+  topHost.replaceChildren();
+  bottomHost.replaceChildren();
+  topHost.classList.add('uiape-visualeq-row-host');
+  bottomHost.classList.add('uiape-visualeq-row-host');
+  topHost.dataset.uiapeVisualEqPosition = 'top';
+  bottomHost.dataset.uiapeVisualEqPosition = 'bottom';
+
+  // Keep VisualEQ's original live nodes connected but out of the visual flow.
+  // The Webserver continues updating .data-flag and the other native sources,
+  // while UIAPE reads those values to render its own labels.
+  const topNativeSource = document.createElement('span');
+  topNativeSource.dataset.uiapeVisualEqNativeSource = '1';
+  topNativeSource.style.display = 'none';
+  topNativeSource.append(...uiapeVisualEqTopOriginalNodes);
+  topHost.appendChild(topNativeSource);
+
+  const bottomNativeSource = document.createElement('span');
+  bottomNativeSource.dataset.uiapeVisualEqNativeSource = '1';
+  bottomNativeSource.style.display = 'none';
+  bottomNativeSource.append(...uiapeVisualEqBottomOriginalNodes);
+  bottomHost.appendChild(bottomNativeSource);
+
+  if (Array.isArray(preset.FIRST_ROW) && preset.FIRST_ROW.length) {
+    const topRow = createIconRow(preset.FIRST_ROW, true, preset);
+    const userTopOffset = Number(preset.GAP_ROW_1);
+    topRow.style.transform = `translateY(${(Number.isFinite(userTopOffset) ? userTopOffset : 0) + UIAPE_VISUALEQ_TOP_CENTER_OFFSET}px)`;
+    topHost.appendChild(topRow);
+  }
+  if (Array.isArray(preset.SECOND_ROW) && preset.SECOND_ROW.length) {
+    const bottomRow = createIconRow(preset.SECOND_ROW, false, preset);
+    const userBottomOffset = Number(preset.GAP_ROW_2);
+    bottomRow.style.transform = `translateY(${(Number.isFinite(userBottomOffset) ? userBottomOffset : 0) + UIAPE_VISUALEQ_BOTTOM_CENTER_OFFSET}px)`;
+    bottomHost.appendChild(bottomRow);
+  }
+  return true;
+}
+
+function uiapeScheduleVisualEqRows() {
+  if (uiapePopulateVisualEqRows()) return;
+  if (uiapeVisualEqInstallTimer) return;
+  let attempts = 0;
+  uiapeVisualEqInstallTimer = setInterval(() => {
+    attempts++;
+    if (uiapePopulateVisualEqRows() || attempts >= 300) {
+      clearInterval(uiapeVisualEqInstallTimer);
+      uiapeVisualEqInstallTimer = null;
+    }
+  }, 50);
+}
+
 // Re-resolves the preset live and rebuilds from scratch, safe to call again on preset changes
 function insertSignalPanel() {
+  const liveCfg = getUiapPanelConfig();
+
+  // VisualEQ first moves the native h3/h2 around PS. Fill those existing hosts
+  // only after that operation; never create or move a competing signal panel.
+  if (uiapeIsVisualEqActive(liveCfg)) {
+    uiapeScheduleVisualEqRows();
+    return;
+  }
+
+  // Only dispose the native/Metrics row after VisualEQ has declined ownership.
   uiapeDisposeSignalRowObservers();
-  // Metrics Monitor builds its own #signalPanel; defer to it instead of racing to build ours first
-  if (getUiapPanelConfig().METRICS_MONITOR_PLUGIN_IS_INSTALLED) return;
+
+  // Metrics Monitor still owns #signalPanel and all state/command handling, but
+  // the visible header uses UIAPE's exact factories and configurable row presets.
+  if (liveCfg.METRICS_MONITOR_PLUGIN_IS_INSTALLED) {
+    const metricsPanel = document.getElementById('signalPanel');
+    const metricsIcons = metricsPanel?.querySelector('#signal-icons');
+    if (!metricsIcons) return;
+    uiapePopulateConfiguredIconRows(
+      metricsIcons,
+      uiapeGetActiveRdsPreset(liveCfg),
+      true
+    );
+    return;
+  }
 
   // #signalPanel that exists but belongs to another plugin is to remain untouched.
   let signalPanelElement = document.getElementById('signalPanel');
@@ -8814,6 +9532,7 @@ function insertSignalPanel() {
   // rebuilds (closing) the whole settings panel.
   const existingGear = document.getElementById('uiape-config-gear');
 
+  uiapeDisposeIconNodeLifecycle(signalPanelElement);
   signalPanelElement.innerHTML = '';
 
   if (existingGear) signalPanelElement.appendChild(existingGear);
@@ -8833,29 +9552,8 @@ function insertSignalPanel() {
   const iconsBar = document.createElement('div');
   iconsBar.id = 'signal-icons';
 
-  // Force vertical stacking with centered content
-  iconsBar.style.position = 'relative';
-  iconsBar.style.display = 'flex';
-  iconsBar.style.flexDirection = 'column';
-  iconsBar.style.alignItems = 'center';
-  iconsBar.style.gap = '4px';
-  iconsBar.style.width = '100%';
-
   signalPanelElement.appendChild(iconsBar);
-
-  // Create first row using configurable array
-  if (Array.isArray(preset.FIRST_ROW) && preset.FIRST_ROW.length > 0) {
-    const firstRow = createIconRow(preset.FIRST_ROW, true, preset);
-    iconsBar.appendChild(firstRow);
-  }
-
-  // Create second row using configurable array
-  if (Array.isArray(preset.SECOND_ROW) && preset.SECOND_ROW.length > 0) {
-    const secondRow = createIconRow(preset.SECOND_ROW, false, preset);
-    iconsBar.appendChild(secondRow);
-  }
-
-  uiapeApplyRdsIconAutoFit(iconsBar);
+  uiapePopulateConfiguredIconRows(iconsBar, preset, false);
 }
 
 uiapeApplyRdsIconAutoFitFn = uiapeApplyRdsIconAutoFit;
@@ -8867,12 +9565,65 @@ uiapeRebuildRdsIconPanel = insertSignalPanel;
 function uiapeTeardownRdsIconStylePanel() {
   uiapeDisposeSignalRowObservers();
 
+  if (uiapeVisualEqInstallTimer) {
+    clearInterval(uiapeVisualEqInstallTimer);
+    uiapeVisualEqInstallTimer = null;
+  }
+  const visualEqTop = document.querySelector('#flags-container-desktop > h3.uiape-visualeq-row-host');
+  const visualEqBottom = document.querySelector('#flags-container-desktop > h2.uiape-visualeq-row-host');
+  if (visualEqTop && uiapeVisualEqTopOriginalNodes) {
+    uiapeDisposeVisualEqRow(visualEqTop);
+    visualEqTop.replaceChildren(...uiapeVisualEqTopOriginalNodes);
+    visualEqTop.classList.remove('uiape-visualeq-row-host');
+    delete visualEqTop.dataset.uiapeVisualEqPosition;
+  }
+  if (visualEqBottom && uiapeVisualEqBottomOriginalNodes) {
+    uiapeDisposeVisualEqRow(visualEqBottom);
+    visualEqBottom.replaceChildren(...uiapeVisualEqBottomOriginalNodes);
+    visualEqBottom.classList.remove('uiape-visualeq-row-host');
+    delete visualEqBottom.dataset.uiapeVisualEqPosition;
+  }
+  uiapeVisualEqTopOriginalNodes = null;
+  uiapeVisualEqBottomOriginalNodes = null;
+
   if (uiapeNativeEccObserver) {
     uiapeNativeEccObserver.disconnect();
     uiapeNativeEccObserver = null;
   }
   const signalPanelElement = document.getElementById('signalPanel');
+  uiapeDisposeIconNodeLifecycle(signalPanelElement);
   const nativeContainer = document.querySelector('#flags-container-desktop');
+  const metricsIcons = signalPanelElement?.querySelector('#signal-icons[data-uiape-metrics-rows="1"]');
+
+  // Restore the exact nodes initially created by MetricsHeader. They were kept
+  // detached (not cloned), so their original listeners and observer relationship
+  // are preserved when the UIAPE icon style is disabled live.
+  if (metricsIcons && uiapeMetricsOriginalHeaderNodes) {
+    if (uiapeMetricsStereoControl && uiapeMetricsStereoOriginalParent) {
+      uiapeMetricsStereoControl.style.cssText = uiapeMetricsStereoOriginalCssText;
+      if (uiapeMetricsStereoOriginalNext?.parentNode === uiapeMetricsStereoOriginalParent) {
+        uiapeMetricsStereoOriginalParent.insertBefore(uiapeMetricsStereoControl, uiapeMetricsStereoOriginalNext);
+      } else {
+        uiapeMetricsStereoOriginalParent.appendChild(uiapeMetricsStereoControl);
+      }
+      delete uiapeMetricsStereoControl.dataset.uiapeMetricsMpx;
+    }
+    metricsIcons.replaceChildren(...uiapeMetricsOriginalHeaderNodes);
+    delete metricsIcons.dataset.uiapeMetricsRows;
+    metricsIcons.style.cssText = 'position: absolute;';
+    metricsIcons.style.marginLeft = window.innerWidth < 800 ? '14px' : '-8px';
+    if (uiapeMetricsStereoControl) {
+      uiapeMetricsStereoControl.id = 'stereoIcon';
+    }
+    const meters = document.getElementById('level-meter-container');
+    if (meters) meters.style.marginTop = '25px';
+    uiapeMetricsOriginalHeaderNodes = null;
+    uiapeMetricsStereoControl = null;
+    uiapeMetricsStereoOriginalParent = null;
+    uiapeMetricsStereoOriginalNext = null;
+    uiapeMetricsStereoOriginalCssText = '';
+  }
+
   // #signalPanel that exists but belongs to another plugin is to be left alone
   if (signalPanelElement && signalPanelElement.dataset.uiapeOwned === 'true' && nativeContainer) {
     // Moves the gear back onto the native panel first, matching findUiapHost() immediately so the
@@ -8900,7 +9651,10 @@ function uiapeWaitForMetricsMonitorThenSetup() {
     attempts++;
     if (document.getElementById('eccWrapper') || attempts >= 300) {
       clearInterval(poll);
-      setTimeout(setupTextSocket, 100);
+      setTimeout(() => {
+        if (getUiapPanelConfig().RDS_ICON_STYLE) insertSignalPanel();
+        setupTextSocket();
+      }, 100);
     }
   }, 50);
 }
@@ -8927,14 +9681,14 @@ uiapeInitRdsIconStylePanelFn = uiapeInitRdsIconStylePanel;
 const uiapeInitCfg = getUiapPanelConfig();
 const uiapeIconSubsystemNeeded =
   RDS_ICON_STYLE ||
-  LED_GLOW_EFFECT_ICONS_METRICS_MONITOR_PLUGIN ||
+  LED_GLOW_EFFECT_STEREO_MPX ||
   RDS_ICON_STYLE_REMOVE_RDS_ICON ||
   REPLACE_MPX_LOGO_WITH_STEREO_LOGO_METRICS_MONITOR_PLUGIN ||
   METRICS_MONITOR_PLUGIN_IS_INSTALLED ||
   String(uiapeInitCfg.PTY_DISPLAY_MODE || "FULL").toUpperCase() !== "FULL" ||
   String(uiapeInitCfg.ECC_DISPLAY_MODE || "FLAG").toUpperCase() !== "FLAG";
 
-if (!uiapeIsVisualEqActive(uiapeInitCfg) && uiapeIconSubsystemNeeded && innerWidth > 360) {
+if (uiapeIconSubsystemNeeded && innerWidth > 360) {
   uiapeInitRdsIconStylePanel();
 }
 
@@ -9072,8 +9826,9 @@ function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
     }
     #signalPanel.uiape-config-host > #uiape-config-gear,
     #flags-container-desktop.uiape-config-host > #uiape-config-gear {
-      z-index: 60 !important;
+      z-index: 899 !important;
       pointer-events: none !important;
+      touch-action: manipulation;
     }
     #signalPanel.uiape-config-host:hover > #uiape-config-gear,
     #flags-container-desktop.uiape-config-host:hover > #uiape-config-gear,
@@ -9090,6 +9845,15 @@ function checkUpdate(setupOnly, pluginName, urlUpdateLink, urlFetchLink) {
     html.uiape-touch-device #flags-container-desktop.uiape-config-host > #uiape-config-gear {
       opacity: 0.7 !important;
       pointer-events: auto !important;
+    }
+    @media (max-width: 768px) and (orientation: portrait) {
+      #signalPanel.uiape-config-host > #uiape-config-gear,
+      #flags-container-desktop.uiape-config-host > #uiape-config-gear {
+        width: 32px !important;
+        height: 32px !important;
+        right: 2px !important;
+        top: 2px !important;
+      }
     }
     #uiape-config-panel {
       z-index: 900 !important;
